@@ -64,12 +64,6 @@ export default async function RootLayout({
       data-font-preset={siteSettings.fontPreset}
       data-theme-preset={siteSettings.themePreset}
     >
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400,0,0&display=swap"
-          rel="stylesheet"
-        />
-      </head>
       <body suppressHydrationWarning>
         <RouteProgress />
         {children}

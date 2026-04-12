@@ -10,6 +10,7 @@ import type { HomeAnimeItem } from "@/entities/anime/model/types";
 import { MobileAppShell } from "@/features/mobile/shared/mobile-app-shell";
 import {
   getBookmarkedAnimeIds,
+  getSavedEpisode,
   toggleAnimeBookmark
 } from "@/shared/lib/watch-storage";
 import { MaterialIcon } from "@/shared/ui/icons/material-icon";
@@ -133,7 +134,10 @@ export function MobileBookmarksScreen({ catalog }: MobileBookmarksScreenProps) {
     });
   }, [activeType, savedItems, searchQuery]);
 
-  const spotlightItem = filteredItems[0] ?? savedItems[0] ?? null;
+  const continueWatchingItems = (filteredItems.length > 0 ? filteredItems : savedItems).slice(0, 3);
+  const spotlightItem = continueWatchingItems[0] ?? null;
+  const continueWatchingIds = new Set(continueWatchingItems.map((item) => item.id));
+  const bookmarkGridItems = filteredItems.filter((item) => !continueWatchingIds.has(item.id));
   const savedMovieCount = savedItems.filter((item) => item.formatLabel === "Movie").length;
   const savedSeriesCount = savedItems.filter((item) => item.formatLabel !== "Movie").length;
 
@@ -247,85 +251,33 @@ export function MobileBookmarksScreen({ catalog }: MobileBookmarksScreenProps) {
                     <p className="text-[0.72rem] uppercase tracking-[0.24em] text-[var(--accent-strong)]">
                       Continue watching
                     </p>
-                    <h2 className="mt-1 text-[1.3rem] font-semibold text-[var(--text-primary)]">Saved spotlight</h2>
+                    <h2 className="mt-1 text-[1.3rem] font-semibold text-[var(--text-primary)]">Saved queue</h2>
                   </div>
                 </div>
 
-                <article className="relative overflow-hidden rounded-[34px] border border-[var(--line-soft)] bg-[var(--bg-card-strong)] shadow-[0_30px_64px_rgba(0,0,0,0.34)]">
-                  <Image
-                    fill
-                    alt={spotlightItem.title}
-                    className="object-cover"
-                    sizes="(max-width: 1023px) 100vw, 420px"
-                    src={spotlightItem.bannerImage ?? spotlightItem.coverImage}
-                  />
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,10,15,0.2),rgba(5,10,15,0.68)_48%,rgba(5,10,15,0.96))]" />
-                  <div
-                    className="absolute inset-x-[-20%] bottom-[-10%] h-[55%] rounded-full blur-3xl"
-                    style={{ background: `${spotlightItem.accent}55` }}
-                  />
-
-                  <div className="relative flex min-h-[380px] flex-col p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="inline-flex items-center gap-2 rounded-full bg-[var(--badge-dark)] px-3 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-[var(--accent-strong)] backdrop-blur-md">
-                        <MaterialIcon className="text-[16px]" filled name="favorite" />
-                        Saved
-                      </div>
-                      <button
-                        type="button"
-                        aria-label={`Remove ${spotlightItem.title} from bookmarks`}
-                        onClick={() => handleRemoveBookmark(spotlightItem.id)}
-                        className="flex h-12 w-12 items-center justify-center rounded-full border border-[var(--line-strong)] bg-[var(--accent-soft)] text-[var(--accent-strong)] backdrop-blur-md"
-                      >
-                        <MaterialIcon className="text-[22px]" filled name="favorite" />
-                      </button>
-                    </div>
-
-                    <div className="mt-auto space-y-4">
-                      <div className="flex flex-wrap gap-2">
-                        {spotlightItem.genres.slice(0, 3).map((genre) => (
-                          <span
-                            key={genre}
-                            className="rounded-full border border-[var(--line-soft)] bg-[var(--badge-dark)] px-3 py-1.5 text-[0.68rem] uppercase tracking-[0.18em] text-[var(--text-secondary)] backdrop-blur-sm"
-                          >
-                            {genre}
-                          </span>
-                        ))}
-                      </div>
-
-                      <div>
-                        <p className="text-[0.72rem] uppercase tracking-[0.24em] text-[var(--accent-strong)]">
-                          {spotlightItem.formatLabel} • {spotlightItem.seasonLabel}
-                        </p>
-                        <h2 className="mt-2 max-w-[12ch] text-[2.1rem] leading-[1.02] font-semibold text-[var(--text-primary)]">
-                          {spotlightItem.title}
-                        </h2>
-                      </div>
-
-                      <p className="line-clamp-2 max-w-[32ch] text-sm leading-6 text-[var(--text-secondary)]">
-                        {spotlightItem.description}
-                      </p>
-
-                      <div className="flex items-center gap-3">
+                <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {continueWatchingItems.map((item) => (
+                    <div key={item.id} className="w-[168px] shrink-0">
+                      <SavedAnimeCard
+                        item={item}
+                        onRemove={handleRemoveBookmark}
+                      />
+                      <div className="mt-2 flex items-center justify-between gap-2 px-1">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--badge-dark)] px-3 py-1.5 text-[0.72rem] font-semibold text-[var(--text-primary)]">
+                          <MaterialIcon className="text-[14px] text-[var(--accent-strong)]" name="live_tv" />
+                          Ep {getSavedEpisode(item.id)}
+                        </span>
                         <Link
-                          href={`/watch/${toAnimeSlug(spotlightItem.title)}`}
-                          className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,var(--accent-strong),var(--accent))] px-5 py-3 text-sm font-semibold text-[var(--bg-base)] shadow-[0_18px_34px_var(--accent-soft)]"
+                          href={`/watch/${toAnimeSlug(item.title)}`}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-[linear-gradient(135deg,var(--accent-strong),var(--accent))] px-3 py-1.5 text-[0.72rem] font-semibold text-[var(--bg-base)]"
                         >
-                          <MaterialIcon className="text-[20px]" filled name="play_arrow" />
-                          Continue
+                          <MaterialIcon className="text-[15px]" filled name="play_arrow" />
+                          Watch
                         </Link>
-                        <span className="inline-flex items-center gap-2 rounded-full bg-[var(--badge-dark)] px-4 py-3 text-sm text-[var(--text-primary)] backdrop-blur-sm">
-                          <MaterialIcon className="text-[18px] text-[var(--gold)]" filled name="star" />
-                          {formatDecimalScore(spotlightItem.score)}
-                        </span>
-                        <span className="inline-flex items-center gap-2 rounded-full bg-[var(--badge-dark)] px-4 py-3 text-sm text-[var(--text-primary)] backdrop-blur-sm">
-                          <MaterialIcon className="text-[18px] text-[var(--accent-strong)]" name="live_tv" />
-                          Ep {getSavedEpisode(spotlightItem.id)}
-                        </span>
                       </div>
                     </div>
-                  </div>
-                </article>
+                  ))}
+                </div>
               </section>
             ) : null}
 
@@ -336,24 +288,24 @@ export function MobileBookmarksScreen({ catalog }: MobileBookmarksScreenProps) {
                     Your picks
                   </p>
                   <h2 className="mt-1 text-[1.3rem] font-semibold text-[var(--text-primary)]">
-                    {filteredItems.length} saved title{filteredItems.length === 1 ? "" : "s"}
+                    {bookmarkGridItems.length} saved title{bookmarkGridItems.length === 1 ? "" : "s"}
                   </h2>
                 </div>
               </div>
 
-              {filteredItems.length === 0 ? (
+              {bookmarkGridItems.length === 0 ? (
                 <div className="rounded-[30px] border border-[var(--line-soft)] bg-[var(--bg-card)] px-5 py-10 text-center shadow-[var(--soft-shadow)]">
                   <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent-strong)]">
                     <MaterialIcon className="text-[28px]" name="search_off" />
                   </span>
-                  <h3 className="mt-4 text-lg font-semibold text-[var(--text-primary)]">Nothing matched that search</h3>
+                  <h3 className="mt-4 text-lg font-semibold text-[var(--text-primary)]">No extra bookmarks to show</h3>
                   <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-                    Try another title or switch the saved type chip.
+                    Items already shown in Continue watching are hidden here so the same anime does not repeat twice.
                   </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-4 pb-4">
-                  {filteredItems.map((item) => (
+                  {bookmarkGridItems.map((item) => (
                     <SavedAnimeCard
                       key={item.id}
                       item={item}

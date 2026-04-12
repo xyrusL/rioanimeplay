@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:nodemon": "nodemon",
     "build": "next build",
     "start": "next start",
     "lint": "eslint ."
@@ -24,6 +25,7 @@
     "@types/react": "^19.0.0",
     "eslint": "^9.0.0",
     "eslint-config-next": "^15.0.0",
+    "nodemon": "^3.1.14",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.0.0"
   }

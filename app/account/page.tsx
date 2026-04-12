@@ -434,7 +434,7 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
       mobile={<MobileSettingsScreen />}
       desktop={
         <main className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
-          <div className="site-shell mx-auto flex min-h-screen w-full max-w-[1380px] flex-col px-4 pb-10 pt-4 sm:px-6 xl:px-8">
+          <div className="site-shell desktop-shell mx-auto flex min-h-screen w-full flex-col px-4 pb-10 pt-4 sm:px-6 xl:px-24 2xl:px-28">
             <SiteHeader />
 
             <section className="relative mt-5 overflow-hidden rounded-[32px] border border-[var(--line-soft)] bg-[linear-gradient(135deg,rgba(141,114,255,0.12),rgba(14,15,20,0.92)_34%,rgba(11,12,16,0.98))] px-5 py-6 shadow-[0_30px_70px_rgba(0,0,0,0.34)] sm:px-7 sm:py-8">

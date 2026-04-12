@@ -1,0 +1,22 @@
+{
+  "watch": [
+    "app",
+    "entities",
+    "features",
+    "shared",
+    "pages",
+    "public",
+    "data",
+    "next.config.ts",
+    "package.json"
+  ],
+  "ext": "ts,tsx,js,mjs,json,css",
+  "ignore": [
+    ".next",
+    "node_modules",
+    ".git"
+  ],
+  "exec": "next dev",
+  "restartable": "rs",
+  "signal": "SIGTERM"
+}

@@ -218,17 +218,17 @@ export function RightSidebar({
 
       {isGenresModalOpen ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--modal-overlay)] px-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(4,5,8,0.88)] px-4 backdrop-blur-md"
           role="dialog"
           aria-modal="true"
           aria-labelledby="all-genres-title"
           onClick={() => setIsGenresModalOpen(false)}
         >
           <div
-            className="flex max-h-[calc(100vh-3rem)] w-full max-w-[860px] flex-col overflow-hidden rounded-[28px] border border-[var(--line-strong)] bg-[var(--modal-surface)] shadow-[var(--modal-shadow)]"
+            className="flex max-h-[calc(100vh-3rem)] w-full max-w-[860px] flex-col overflow-hidden rounded-[28px] border border-[rgba(255,207,112,0.18)] bg-[linear-gradient(180deg,rgba(10,12,16,0.995),rgba(8,9,13,0.995))] shadow-[0_36px_96px_rgba(0,0,0,0.62)]"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-[var(--line-soft)] bg-[var(--modal-header-surface)] px-5 py-4">
+            <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] bg-[linear-gradient(90deg,rgba(255,207,112,0.06),rgba(255,255,255,0.01)_42%,transparent)] px-5 py-4">
               <div>
                 <p className="text-[0.68rem] uppercase tracking-[0.22em] text-[var(--text-muted)]">
                   Extra Genres
@@ -244,12 +244,12 @@ export function RightSidebar({
                 type="button"
                 aria-label="Close genres modal"
                 onClick={() => setIsGenresModalOpen(false)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--line-soft)] bg-[rgba(255,255,255,0.03)] text-[var(--text-secondary)] transition-[border-color,color,transform,background-color] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:-translate-y-0.5 hover:border-[var(--line-strong)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[var(--text-primary)]"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] text-[var(--text-secondary)] transition-[border-color,color,transform,background-color] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:-translate-y-0.5 hover:border-[rgba(255,207,112,0.22)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--text-primary)]"
               >
                 <MaterialIcon className="text-[18px]" name="close" />
               </button>
             </div>
-            <div className="space-y-4 overflow-y-auto bg-transparent p-5">
+            <div className="space-y-4 overflow-y-auto bg-[linear-gradient(180deg,rgba(9,11,15,0.98),rgba(8,9,13,0.98))] p-5">
               <p className="text-sm leading-6 text-[var(--text-secondary)]">
                 Most-selected tags stay on the sidebar. The rest live here so the home layout stays tighter.
               </p>
@@ -259,7 +259,7 @@ export function RightSidebar({
                     key={genre}
                     href={`/filter?genres=${encodeURIComponent(genre)}`}
                     onClick={() => setIsGenresModalOpen(false)}
-                    className="flex items-center gap-2 rounded-xl border border-[rgba(255,255,255,0.06)] bg-[var(--modal-section-surface)] px-3 py-2.5 text-sm text-[var(--text-secondary)]"
+                    className="flex items-center gap-2 rounded-xl border border-[rgba(255,255,255,0.05)] bg-[rgba(20,22,29,0.92)] px-3 py-2.5 text-sm text-[var(--text-secondary)] transition-[border-color,background-color,color] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:border-[rgba(255,207,112,0.16)] hover:bg-[rgba(24,26,34,0.96)] hover:text-[var(--text-primary)]"
                   >
                     <MaterialIcon
                       className="leading-none text-[var(--accent-strong)]"

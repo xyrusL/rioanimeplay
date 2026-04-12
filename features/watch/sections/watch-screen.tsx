@@ -44,7 +44,7 @@ export function WatchScreen({ anime }: WatchScreenProps) {
 
   return (
     <main className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
-      <div className="site-shell mx-auto flex min-h-screen w-full max-w-[1180px] flex-col px-4 pb-10 pt-4 sm:px-6 xl:px-8">
+      <div className="site-shell desktop-shell--watch mx-auto flex min-h-screen w-full flex-col px-4 pb-10 pt-4 sm:px-6 xl:px-24 2xl:px-28">
         <header className="mb-5 flex flex-wrap items-center gap-3 rounded-[24px] border border-[var(--line-soft)] bg-[var(--watch-topbar-surface)] px-4 py-3 shadow-[var(--soft-shadow)]">
           <div className="flex items-center gap-2 text-[var(--text-secondary)]">
             <Link

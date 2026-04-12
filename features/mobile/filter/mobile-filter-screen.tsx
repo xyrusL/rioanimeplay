@@ -1,25 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import type { HomeAnimeItem } from "@/entities/anime/model/types";
 import {
   buildFilterHref,
+  filterCatalogItems,
   FILTER_ALL_TYPES,
   FILTER_ALL_YEARS,
   FILTER_DEFAULT_SEASON,
-  getFilterYearOptions
+  getFilterYearOptions,
+  sortFilteredItems
 } from "@/features/browse/model/filter-utils";
 import { MobilePosterCard } from "@/features/mobile/shared/mobile-anime-card";
 import { MobileAppShell } from "@/features/mobile/shared/mobile-app-shell";
-import { ROUTE_PROGRESS_START_EVENT } from "@/shared/ui/route-progress";
 import { MaterialIcon } from "@/shared/ui/icons/material-icon";
 
 type MobileFilterScreenProps = {
+  catalog: HomeAnimeItem[];
   initialPage: number;
-  items: HomeAnimeItem[];
   initialQuery: string;
   initialType: string;
   initialSeason: string;
@@ -74,8 +74,8 @@ function MobileFilterSelect({
 }
 
 export function MobileFilterScreen({
+  catalog,
   initialPage,
-  items,
   initialQuery,
   initialType,
   initialSeason,
@@ -84,25 +84,26 @@ export function MobileFilterScreen({
   genres,
   types
 }: MobileFilterScreenProps) {
-  const router = useRouter();
-  const pathname = usePathname();
   const currentYear = String(new Date().getFullYear());
-  const totalPages = Math.max(1, Math.ceil(items.length / MOBILE_FILTER_PAGE_SIZE));
-  const [currentPage, setCurrentPage] = useState(Math.min(initialPage, totalPages));
   const [searchValue, setSearchValue] = useState(initialQuery);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [appliedType, setAppliedType] = useState(initialType);
+  const [appliedSeason, setAppliedSeason] = useState(initialSeason);
+  const [appliedYear, setAppliedYear] = useState(initialYear);
+  const [appliedGenres, setAppliedGenres] = useState<string[]>(initialGenres);
   const [draftType, setDraftType] = useState(initialType);
   const [draftSeason, setDraftSeason] = useState(initialSeason);
   const [draftYear, setDraftYear] = useState(initialYear);
   const [draftGenres, setDraftGenres] = useState<string[]>(initialGenres);
   const [genreQuery, setGenreQuery] = useState("");
-
-  useEffect(() => {
-    setCurrentPage(Math.min(initialPage, totalPages));
-  }, [initialPage, totalPages]);
+  const [currentPage, setCurrentPage] = useState(initialPage);
 
   useEffect(() => {
     setSearchValue(initialQuery);
+    setAppliedType(initialType);
+    setAppliedSeason(initialSeason);
+    setAppliedYear(initialYear);
+    setAppliedGenres(initialGenres);
     setDraftType(initialType);
     setDraftSeason(initialSeason);
     setDraftYear(initialYear);
@@ -122,11 +123,6 @@ export function MobileFilterScreen({
       document.body.style.overflow = originalOverflow;
     };
   }, [isSheetOpen]);
-
-  const pageItems = useMemo(() => {
-    const start = (currentPage - 1) * MOBILE_FILTER_PAGE_SIZE;
-    return items.slice(start, start + MOBILE_FILTER_PAGE_SIZE);
-  }, [currentPage, items]);
 
   const filteredGenres = useMemo(() => {
     const normalizedQuery = genreQuery.trim().toLowerCase();
@@ -165,74 +161,89 @@ export function MobileFilterScreen({
     []
   );
 
-  function replaceRoute(href: string) {
-    if (typeof window !== "undefined") {
-      const currentHref = `${pathname}${window.location.search}`;
+  const filteredItems = useMemo(
+    () =>
+      sortFilteredItems(
+        filterCatalogItems(catalog, {
+          query: searchValue,
+          type: appliedType,
+          season: appliedSeason,
+          year: appliedYear,
+          genres: appliedGenres
+        }),
+        {
+          query: searchValue,
+          season: appliedSeason,
+          year: appliedYear
+        }
+      ),
+    [appliedGenres, appliedSeason, appliedType, appliedYear, catalog, searchValue]
+  );
 
-      if (href === currentHref) {
-        return;
-      }
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / MOBILE_FILTER_PAGE_SIZE));
 
-      window.dispatchEvent(new Event(ROUTE_PROGRESS_START_EVENT));
-    }
+  useEffect(() => {
+    setCurrentPage((value) => Math.min(Math.max(1, value), totalPages));
+  }, [totalPages]);
 
-    router.replace(href);
-  }
+  const pageItems = useMemo(() => {
+    const start = (currentPage - 1) * MOBILE_FILTER_PAGE_SIZE;
+    return filteredItems.slice(start, start + MOBILE_FILTER_PAGE_SIZE);
+  }, [currentPage, filteredItems]);
 
-  function commitRoute(next: {
+  function syncRoute(next: {
     query?: string;
     type?: string;
     season?: string;
     year?: string;
     genres?: string[];
+    page?: number;
   }) {
-    replaceRoute(
-      buildFilterHref({
-        query: next.query,
-        type: next.type,
-        season: next.season,
-        year: next.year,
-        genres: next.genres
-      })
-    );
+    const href = buildFilterHref({
+      query: next.query,
+      type: next.type,
+      season: next.season,
+      year: next.year,
+      genres: next.genres,
+      page: next.page
+    });
+
+    window.history.replaceState({}, "", href);
   }
+
+  useEffect(() => {
+    setCurrentPage(1);
+    syncRoute({
+      query: searchValue,
+      type: appliedType,
+      season: appliedSeason,
+      year: appliedYear,
+      genres: appliedGenres
+    });
+  }, [appliedGenres, appliedSeason, appliedType, appliedYear, searchValue]);
 
   function submitSearch(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    commitRoute({
-      query: searchValue,
-      type: initialType,
-      season: initialSeason,
-      year: initialYear,
-      genres: initialGenres
-    });
   }
 
   function clearSearch() {
     setSearchValue("");
-    commitRoute({
-      query: "",
-      type: initialType,
-      season: initialSeason,
-      year: initialYear,
-      genres: initialGenres
-    });
   }
 
   function openSheet() {
-    setDraftType(initialType);
-    setDraftSeason(initialSeason);
-    setDraftYear(initialYear);
-    setDraftGenres(initialGenres);
+    setDraftType(appliedType);
+    setDraftSeason(appliedSeason);
+    setDraftYear(appliedYear);
+    setDraftGenres(appliedGenres);
     setGenreQuery("");
     setIsSheetOpen(true);
   }
 
   function closeSheet() {
-    setDraftType(initialType);
-    setDraftSeason(initialSeason);
-    setDraftYear(initialYear);
-    setDraftGenres(initialGenres);
+    setDraftType(appliedType);
+    setDraftSeason(appliedSeason);
+    setDraftYear(appliedYear);
+    setDraftGenres(appliedGenres);
     setGenreQuery("");
     setIsSheetOpen(false);
   }
@@ -246,14 +257,12 @@ export function MobileFilterScreen({
   }
 
   function applyDraftFilters() {
+    setAppliedType(draftType);
+    setAppliedSeason(draftSeason);
+    setAppliedYear(draftYear);
+    setAppliedGenres(draftGenres);
+    setCurrentPage(1);
     setIsSheetOpen(false);
-    commitRoute({
-      query: searchValue,
-      type: draftType,
-      season: draftSeason,
-      year: draftYear,
-      genres: draftGenres
-    });
   }
 
   function toggleDraftGenre(genre: string) {
@@ -268,100 +277,63 @@ export function MobileFilterScreen({
     const clampedPage = Math.min(Math.max(1, nextPage), totalPages);
     setCurrentPage(clampedPage);
 
-    const href = buildFilterHref({
-      query: initialQuery,
-      type: initialType,
-      season: initialSeason,
-      year: initialYear,
-      genres: initialGenres,
+    syncRoute({
+      query: searchValue,
+      type: appliedType,
+      season: appliedSeason,
+      year: appliedYear,
+      genres: appliedGenres,
       page: clampedPage
     });
-
-    window.history.replaceState({}, "", href);
   }
 
   const advancedFilterCount =
-    (initialType !== FILTER_ALL_TYPES ? 1 : 0) +
-    (initialSeason !== FILTER_DEFAULT_SEASON ? 1 : 0) +
-    (initialYear !== currentYear ? 1 : 0) +
-    initialGenres.length;
+    (appliedType !== FILTER_ALL_TYPES ? 1 : 0) +
+    (appliedSeason !== FILTER_DEFAULT_SEASON ? 1 : 0) +
+    (appliedYear !== currentYear ? 1 : 0) +
+    appliedGenres.length;
 
   const summaryChips: FilterChipConfig[] = [
-    ...(initialQuery
+    ...(searchValue
       ? [
           {
             id: "query",
-            label: `Search: ${initialQuery}`,
-            onRemove: () =>
-              commitRoute({
-                query: "",
-                type: initialType,
-                season: initialSeason,
-                year: initialYear,
-                genres: initialGenres
-              })
+            label: `Search: ${searchValue}`,
+            onRemove: () => setSearchValue("")
           }
         ]
       : []),
-    ...(initialType !== FILTER_ALL_TYPES
+    ...(appliedType !== FILTER_ALL_TYPES
       ? [
           {
             id: "type",
-            label: initialType,
-            onRemove: () =>
-              commitRoute({
-                query: initialQuery,
-                type: FILTER_ALL_TYPES,
-                season: initialSeason,
-                year: initialYear,
-                genres: initialGenres
-              })
+            label: appliedType,
+            onRemove: () => setAppliedType(FILTER_ALL_TYPES)
           }
         ]
       : []),
-    ...(initialSeason !== FILTER_DEFAULT_SEASON
+    ...(appliedSeason !== FILTER_DEFAULT_SEASON
       ? [
           {
             id: "season",
-            label: initialSeason,
-            onRemove: () =>
-              commitRoute({
-                query: initialQuery,
-                type: initialType,
-                season: FILTER_DEFAULT_SEASON,
-                year: initialYear,
-                genres: initialGenres
-              })
+            label: appliedSeason,
+            onRemove: () => setAppliedSeason(FILTER_DEFAULT_SEASON)
           }
         ]
       : []),
-    ...(initialYear !== currentYear
+    ...(appliedYear !== currentYear
       ? [
           {
             id: "year",
-            label: initialYear === FILTER_ALL_YEARS ? "All Years" : initialYear,
-            onRemove: () =>
-              commitRoute({
-                query: initialQuery,
-                type: initialType,
-                season: initialSeason,
-                year: currentYear,
-                genres: initialGenres
-              })
+            label: appliedYear === FILTER_ALL_YEARS ? "All Years" : appliedYear,
+            onRemove: () => setAppliedYear(currentYear)
           }
         ]
       : []),
-    ...initialGenres.map((genre) => ({
+    ...appliedGenres.map((genre) => ({
       id: `genre-${genre}`,
       label: genre,
-      onRemove: () =>
-        commitRoute({
-          query: initialQuery,
-          type: initialType,
-          season: initialSeason,
-          year: initialYear,
-          genres: initialGenres.filter((item) => item !== genre)
-        })
+      onRemove: () => setAppliedGenres((current) => current.filter((item) => item !== genre))
     }))
   ];
 
@@ -387,7 +359,7 @@ export function MobileFilterScreen({
                 </div>
               </div>
               <p className="pl-12 text-sm text-[var(--text-secondary)]">
-                {items.length} result{items.length === 1 ? "" : "s"} ready
+                {filteredItems.length} result{filteredItems.length === 1 ? "" : "s"} ready
               </p>
             </div>
             <button
@@ -465,7 +437,7 @@ export function MobileFilterScreen({
           </div>
         </header>
 
-        {items.length === 0 ? (
+        {filteredItems.length === 0 ? (
           <section className="rounded-[30px] border border-[var(--line-soft)] bg-[var(--bg-card)] px-5 py-12 text-center shadow-[var(--soft-shadow)]">
             <p className="text-[0.76rem] uppercase tracking-[0.28em] text-[var(--accent-strong)]">
               No Match
@@ -552,7 +524,7 @@ export function MobileFilterScreen({
                       Live result set
                     </p>
                     <p className="mt-2 text-sm leading-6 text-[var(--text-primary)]">
-                      Applied filters currently show {items.length} anime. Use Apply when this draft feels right.
+                      Applied filters currently show {filteredItems.length} anime. Use Apply when this draft feels right.
                     </p>
                   </div>
                   <button

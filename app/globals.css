@@ -1,6 +1,14 @@
 @import "tailwindcss";
 @import "./theme.css";
 
+@font-face {
+  font-family: "Material Symbols Rounded";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/material-symbols-rounded.ttf") format("truetype");
+}
+
 * {
   box-sizing: border-box;
 }
@@ -64,24 +72,34 @@ input[type="reset"] {
   letter-spacing: 0.06em;
 }
 
-.material-symbols-rounded {
-  font-family: "Material Symbols Rounded";
-  font-weight: normal;
-  font-style: normal;
-  font-size: inherit;
-  line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
-  display: inline-block;
-  white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  -webkit-font-smoothing: antialiased;
-  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+@layer base {
+  .material-symbols-rounded {
+    font-family: "Material Symbols Rounded";
+    font-weight: normal;
+    font-style: normal;
+    font-size: inherit;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-smoothing: antialiased;
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+  }
 }
 
 .site-shell {
   position: relative;
+}
+
+.desktop-shell {
+  max-width: 1560px;
+}
+
+.desktop-shell--watch {
+  max-width: 1400px;
 }
 
 .site-shell::before {
@@ -124,5 +142,15 @@ input[type="reset"] {
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 1ms !important;
+  }
+}
+
+@media (min-width: 1800px) {
+  .desktop-shell {
+    max-width: 1680px;
+  }
+
+  .desktop-shell--watch {
+    max-width: 1520px;
   }
 }

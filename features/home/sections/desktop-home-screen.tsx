@@ -19,9 +19,9 @@ export function DesktopHomeScreen({
 }: DesktopHomeScreenProps) {
   return (
     <main className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
-      <div className="site-shell mx-auto flex min-h-screen w-full max-w-[1380px] flex-col px-4 pb-10 pt-4 sm:px-6 xl:px-8">
+      <div className="site-shell desktop-shell mx-auto flex min-h-screen w-full flex-col px-4 pb-10 pt-4 sm:px-6 xl:px-24 2xl:px-28">
         <SiteHeader />
-        <div className="mt-5 grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="mt-5 grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
           <div className="space-y-5">
             <FeaturedHero featured={homePageData.featured} />
             <AnnouncementStrip

@@ -1,31 +1,33 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { isLikelyMobileClient } from "@/shared/lib/mobile-detection";
 
 type ResponsiveRenderProps = {
   initialIsMobile: boolean;
   mobile: React.ReactNode;
   desktop: React.ReactNode;
-  breakpoint?: number;
 };
 
 export function ResponsiveRender({
   initialIsMobile,
   mobile,
-  desktop,
-  breakpoint = 1024
+  desktop
 }: ResponsiveRenderProps) {
   const [isMobile, setIsMobile] = useState(initialIsMobile);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
-    const updateMatch = () => setIsMobile(mediaQuery.matches);
+    const updateMatch = () => setIsMobile(isLikelyMobileClient());
 
     updateMatch();
-    mediaQuery.addEventListener("change", updateMatch);
+    window.addEventListener("resize", updateMatch);
+    window.addEventListener("orientationchange", updateMatch);
 
-    return () => mediaQuery.removeEventListener("change", updateMatch);
-  }, [breakpoint]);
+    return () => {
+      window.removeEventListener("resize", updateMatch);
+      window.removeEventListener("orientationchange", updateMatch);
+    };
+  }, []);
 
   return isMobile ? mobile : desktop;
 }

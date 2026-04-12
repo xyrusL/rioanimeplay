@@ -127,6 +127,8 @@
   --mobile-sheet-shadow: 0 28px 72px rgba(0, 0, 0, 0.52);
 
   --play-button-fg: var(--accent);
+  --intro-cta-strip-bg: rgba(255, 255, 255, 0.08);
+  --intro-cta-strip-fg: var(--text-primary);
   --scrollbar-track: #111217;
   --scrollbar-thumb-start: #5b4c89;
   --scrollbar-thumb-end: #2f2d42;
@@ -175,6 +177,8 @@ html[data-theme-preset="dark-purple"] {
     rgba(141, 114, 255, 0.22),
     transparent 28%
   );
+  --intro-cta-strip-bg: #af90ff;
+  --intro-cta-strip-fg: #131315;
   --modal-header-surface: linear-gradient(90deg, rgba(141, 114, 255, 0.12), transparent 48%);
   --watch-panel-header: linear-gradient(90deg, rgba(141, 114, 255, 0.1), transparent 34%);
   --scrollbar-thumb-start: #5b4c89;
@@ -202,6 +206,8 @@ html[data-theme-preset="dark-rose"] {
     rgba(207, 95, 144, 0.22),
     transparent 28%
   );
+  --intro-cta-strip-bg: #f2a0bf;
+  --intro-cta-strip-fg: #131315;
   --modal-header-surface: linear-gradient(90deg, rgba(207, 95, 144, 0.12), transparent 48%);
   --watch-panel-header: linear-gradient(90deg, rgba(207, 95, 144, 0.1), transparent 34%);
   --scrollbar-thumb-start: #7a3c58;
@@ -229,6 +235,8 @@ html[data-theme-preset="dark-strawberry"] {
     rgba(201, 79, 104, 0.22),
     transparent 28%
   );
+  --intro-cta-strip-bg: #ff9cab;
+  --intro-cta-strip-fg: #131315;
   --modal-header-surface: linear-gradient(90deg, rgba(201, 79, 104, 0.12), transparent 48%);
   --watch-panel-header: linear-gradient(90deg, rgba(201, 79, 104, 0.1), transparent 34%);
   --scrollbar-thumb-start: #7c3040;
@@ -256,6 +264,8 @@ html[data-theme-preset="dark-chocolate"] {
     rgba(180, 122, 88, 0.22),
     transparent 28%
   );
+  --intro-cta-strip-bg: #e2b38f;
+  --intro-cta-strip-fg: #131315;
   --modal-header-surface: linear-gradient(90deg, rgba(180, 122, 88, 0.12), transparent 48%);
   --watch-panel-header: linear-gradient(90deg, rgba(180, 122, 88, 0.1), transparent 34%);
   --scrollbar-thumb-start: #684331;
@@ -355,6 +365,8 @@ html[data-theme-preset="dark-amber"] {
   --modal-section-surface: rgba(255, 255, 255, 0.03);
   --modal-header-surface: linear-gradient(90deg, rgba(255, 180, 95, 0.12), transparent 48%);
   --play-button-fg: #ffd58f;
+  --intro-cta-strip-bg: #ffd58f;
+  --intro-cta-strip-fg: #0f1218;
   --scrollbar-track: #0d1117;
   --scrollbar-thumb-start: #9b6a2a;
   --scrollbar-thumb-end: #3d3325;
@@ -382,6 +394,8 @@ html[data-theme-preset="dark-pink"] {
     rgba(215, 100, 170, 0.22),
     transparent 28%
   );
+  --intro-cta-strip-bg: #ffacf0;
+  --intro-cta-strip-fg: #131315;
   --modal-header-surface: linear-gradient(90deg, rgba(215, 100, 170, 0.12), transparent 48%);
   --watch-panel-header: linear-gradient(90deg, rgba(215, 100, 170, 0.1), transparent 34%);
   --scrollbar-thumb-start: #7b3762;
@@ -409,6 +423,8 @@ html[data-theme-preset="dark-neon"] {
     rgba(47, 225, 255, 0.24),
     transparent 28%
   );
+  --intro-cta-strip-bg: #98f5ff;
+  --intro-cta-strip-fg: #131315;
   --modal-header-surface: linear-gradient(90deg, rgba(47, 225, 255, 0.14), transparent 48%);
   --watch-panel-header: linear-gradient(90deg, rgba(47, 225, 255, 0.12), transparent 34%);
   --scrollbar-thumb-start: #1a8a9b;
@@ -436,6 +452,8 @@ html[data-theme-preset="dark-midnight"] {
     rgba(111, 143, 255, 0.22),
     transparent 28%
   );
+  --intro-cta-strip-bg: #b9c8ff;
+  --intro-cta-strip-fg: #131315;
   --modal-header-surface: linear-gradient(90deg, rgba(111, 143, 255, 0.12), transparent 48%);
   --watch-panel-header: linear-gradient(90deg, rgba(111, 143, 255, 0.1), transparent 34%);
   --scrollbar-thumb-start: #4358a8;

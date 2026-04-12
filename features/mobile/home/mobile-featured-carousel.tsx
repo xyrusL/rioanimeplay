@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 
+import { formatDecimalScore } from "@/entities/anime/lib/formatters";
 import { toAnimeSlug } from "@/entities/anime/lib/slug";
 import type { HomeAnimeItem } from "@/entities/anime/model/types";
 import {
@@ -160,7 +161,7 @@ export function MobileFeaturedCarousel({
                         </Link>
                         <span className="inline-flex items-center gap-2 rounded-full bg-[var(--badge-dark)] px-4 py-3 text-sm text-[var(--text-primary)] backdrop-blur-sm">
                           <MaterialIcon className="text-[18px] text-[var(--gold)]" filled name="star" />
-                          {item.score ?? "N/A"}
+                          {formatDecimalScore(item.score)}
                         </span>
                       </div>
                     </div>

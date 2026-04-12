@@ -6,7 +6,7 @@ export function formatDecimalScore(score: number | null) {
   const tenScale = score / 10;
   const rounded = Math.round(tenScale * 10) / 10;
 
-  return Number.isInteger(rounded) ? `${rounded}` : rounded.toFixed(1);
+  return rounded.toFixed(1);
 }
 
 export function titleCase(value: string) {
