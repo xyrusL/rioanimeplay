@@ -1,0 +1,8 @@
+.next/
+node_modules/
+out/
+coverage/
+.playwright-mcp/
+.DS_Store
+*.log
+next-env.d.ts

@@ -1,0 +1,21 @@
+{
+  "themePreset": "dark-amber",
+  "fontPreset": "lexend-default",
+  "announcement": {
+    "title": "Dear Viewers",
+    "message": "This homepage is under development. The layout is being rebuilt in Next.js and Tailwind CSS to mirror the original RioAnime portal with a cleaner structure and temporary AniList demo content."
+  },
+  "authLockdown": {
+    "enabled": false,
+    "message": "Login and registration are temporarily unavailable for the moment. Please wait for a further announcement."
+  },
+  "animeRules": [
+    {
+      "animeId": 182587,
+      "slug": "oshi-no-ko-season-3",
+      "title": "【OSHI NO KO】Season 3",
+      "status": "locked",
+      "updatedAt": "2026-04-12T07:07:40.596Z"
+    }
+  ]
+}

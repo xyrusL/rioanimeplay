@@ -1,0 +1,236 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+
+import { buildFilterHref, FILTER_ALL_YEARS } from "@/features/browse/model/filter-utils";
+import { MaterialIcon } from "@/shared/ui/icons/material-icon";
+
+type SearchResult = {
+  id: number;
+  title: string;
+  alternateTitles: string[];
+  coverImage: string;
+  formatLabel: string;
+  yearLabel: string;
+  episodesLabel: string;
+  scoreLabel: string;
+  href: string;
+};
+
+type SearchAutocompleteProps = {
+  className?: string;
+};
+
+export function SearchAutocomplete({ className }: SearchAutocompleteProps) {
+  const router = useRouter();
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const activeRequestRef = useRef<AbortController | null>(null);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  function clearSearch() {
+    activeRequestRef.current?.abort();
+    setQuery("");
+    setResults([]);
+    setIsLoading(false);
+    setIsOpen(false);
+  }
+
+  function buildResultsHref() {
+    return buildFilterHref({
+      query,
+      year: FILTER_ALL_YEARS
+    });
+  }
+
+  useEffect(() => {
+    function handlePointerDown(event: MouseEvent) {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, []);
+
+  useEffect(() => {
+    const trimmedQuery = query.trim();
+    activeRequestRef.current?.abort();
+
+    if (trimmedQuery.length < 1) {
+      setResults([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    const controller = new AbortController();
+    activeRequestRef.current = controller;
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/search?q=${encodeURIComponent(trimmedQuery)}`, {
+          signal: controller.signal
+        });
+        const payload = (await response.json()) as { results: SearchResult[] };
+        if (controller.signal.aborted) {
+          return;
+        }
+        setResults(payload.results);
+        setIsOpen(true);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+        setResults([]);
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoading(false);
+        }
+      }
+    }, 90);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [query]);
+
+  return (
+    <div ref={containerRef} className={`relative min-w-0 ${className ?? ""}`}>
+      <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[var(--text-muted)]">
+        <MaterialIcon className="text-[18px]" name="search" />
+      </span>
+      <input
+        value={query}
+        aria-label="Search anime"
+        placeholder="Search"
+        onChange={(event) => {
+          setQuery(event.target.value);
+          setIsOpen(true);
+        }}
+        onFocus={() => {
+          if (results.length > 0) {
+            setIsOpen(true);
+          }
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            const trimmedQuery = query.trim();
+
+            if (trimmedQuery) {
+              setIsOpen(false);
+              router.push(buildResultsHref());
+            }
+          }
+        }}
+        className="h-11 w-full rounded-full border border-[var(--line-soft)] bg-[rgba(255,255,255,0.04)] pl-10 pr-12 text-sm text-[var(--text-secondary)] outline-none placeholder:text-[var(--text-muted)] transition-[border-color,background-color] duration-[var(--motion-base)] ease-[var(--ease-smooth)] focus:border-[var(--line-strong)] focus:bg-[rgba(255,255,255,0.05)]"
+      />
+      {query.length > 0 ? (
+        <button
+          type="button"
+          aria-label="Clear search"
+          onClick={clearSearch}
+          className="absolute inset-y-0 right-3 inline-flex cursor-pointer items-center text-[var(--text-muted)] transition-colors duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:text-[var(--text-primary)]"
+        >
+          <MaterialIcon className="text-[18px]" name="close" />
+        </button>
+      ) : null}
+
+      {isOpen && query.trim().length >= 1 ? (
+        <div className="absolute left-0 right-0 top-[calc(100%+10px)] z-[320] overflow-hidden rounded-[24px] border border-[rgba(141,114,255,0.18)] bg-[var(--search-surface)] shadow-[0_28px_80px_rgba(0,0,0,0.58)]">
+          {isLoading ? (
+            <div className="min-h-[96px] bg-[var(--search-status-surface)] px-5 py-6 text-sm font-medium text-[var(--text-primary)]">
+              Searching anime...
+            </div>
+          ) : results.length === 0 ? (
+            <>
+              <div className="min-h-[96px] bg-[var(--search-status-surface)] px-5 py-6 text-sm font-medium text-[var(--text-primary)]">
+                No quick match showed up here yet.
+              </div>
+              <Link
+                href={buildResultsHref()}
+                onClick={() => setIsOpen(false)}
+                className="flex cursor-pointer items-center justify-center border-t border-[rgba(255,255,255,0.05)] bg-[#181820] px-5 py-4 text-center text-[0.95rem] font-semibold text-[var(--text-muted)] transition-colors duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:text-[var(--text-primary)]"
+              >
+                Search in filter page
+                <span className="ml-1 inline-block align-middle">
+                  <MaterialIcon className="text-[18px]" name="arrow_right_alt" />
+                </span>
+              </Link>
+            </>
+          ) : (
+            <>
+              <div className="max-h-[520px] overflow-y-auto bg-[#181820]">
+                {results.map((result) => (
+                  <Link
+                    key={result.id}
+                    href={result.href}
+                    onClick={() => setIsOpen(false)}
+                    className="flex cursor-pointer items-center gap-3 border-b border-[rgba(255,255,255,0.05)] bg-[#181820] px-5 py-4 transition-[background-color] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:bg-[#22222c]"
+                  >
+                    <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-[18px] border border-[rgba(255,255,255,0.08)]">
+                      <Image
+                        fill
+                        alt={result.title}
+                        className="object-cover"
+                        sizes="72px"
+                        src={result.coverImage}
+                      />
+                    </div>
+                    <div className="min-w-0 space-y-2">
+                      <div>
+                        <p className="line-clamp-1 text-[1rem] font-semibold text-[var(--text-primary)]">
+                          {result.title}
+                        </p>
+                        {result.alternateTitles.length > 0 ? (
+                          <p className="line-clamp-1 text-[0.84rem] text-[var(--text-muted)]">
+                            {result.alternateTitles.join("; ")}
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-[0.72rem] text-[var(--text-secondary)]">
+                        <span className="inline-flex items-center gap-1 rounded-[9px] border border-[rgba(255,122,73,0.34)] bg-[rgba(255,122,73,0.12)] px-1.5 py-0.5 font-semibold text-[#ff8b58]">
+                          <MaterialIcon className="text-[12px]" name="movie" />
+                          {result.episodesLabel}
+                        </span>
+                        <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-[9px] border border-[rgba(123,174,255,0.28)] bg-[rgba(123,174,255,0.12)] px-1.5 py-0.5 font-semibold text-[#9ec5ff]">
+                          <MaterialIcon className="text-[12px]" name="calendar_month" />
+                          {result.yearLabel}
+                        </span>
+                        <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-[9px] border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.06)] px-1.5 py-0.5 font-semibold text-[var(--text-primary)]">
+                          <MaterialIcon className="text-[12px]" name="live_tv" />
+                          {result.formatLabel}
+                        </span>
+                        <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-[9px] border border-[rgba(255,199,92,0.3)] bg-[rgba(255,199,92,0.14)] px-1.5 py-0.5 font-semibold text-[#ffcf70]">
+                          <MaterialIcon className="text-[12px]" filled name="star" />
+                          {result.scoreLabel}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+              <Link
+                href={buildResultsHref()}
+                onClick={() => setIsOpen(false)}
+                className="flex cursor-pointer items-center justify-center border-t border-[rgba(255,255,255,0.05)] bg-[#181820] px-5 py-4 text-center text-[0.95rem] font-semibold text-[var(--text-muted)] transition-colors duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:text-[var(--text-primary)]"
+              >
+                View matching results
+                <span className="ml-1 inline-block align-middle">
+                  <MaterialIcon className="text-[18px]" name="arrow_right_alt" />
+                </span>
+              </Link>
+            </>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
