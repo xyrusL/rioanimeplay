@@ -74,7 +74,7 @@ function MobileAnnouncementSheet({
         onClick={onClose}
         className="absolute inset-0 bg-[var(--mobile-sheet-overlay)] backdrop-blur-[3px]"
       />
-      <div className="absolute inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+6.25rem)] px-3 sm:px-4">
+      <div className="absolute inset-x-0 bottom-[max(1rem,calc(env(safe-area-inset-bottom)+0.75rem))] px-3 sm:px-4">
         <div
           role="dialog"
           aria-modal="true"
@@ -133,7 +133,7 @@ export function MobileHomeScreen({
   const [isAnnouncementOpen, setIsAnnouncementOpen] = useState(false);
 
   return (
-    <MobileAppShell>
+    <MobileAppShell hideBottomNav={isAnnouncementOpen}>
       <div className="space-y-6">
         <header className="space-y-4 rounded-[34px] border border-[var(--line-soft)] bg-[var(--panel-surface)] p-4 shadow-[var(--panel-shadow)]">
           <div className="flex items-center justify-between gap-3">

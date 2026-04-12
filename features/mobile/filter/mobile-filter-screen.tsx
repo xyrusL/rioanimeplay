@@ -50,22 +50,22 @@ function MobileFilterSelect({
 }) {
   return (
     <label className="space-y-2">
-      <span className="text-[0.7rem] uppercase tracking-[0.22em] text-[rgba(222,230,238,0.58)]">
+      <span className="text-[0.7rem] uppercase tracking-[0.22em] text-[var(--text-muted)]">
         {label}
       </span>
       <span className="relative block">
         <select
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="h-12 w-full appearance-none rounded-[18px] border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.05)] px-4 pr-11 text-sm font-medium text-white outline-none transition-[border-color,background-color] duration-[var(--motion-base)] ease-[var(--ease-smooth)] focus:border-[rgba(42,170,255,0.45)] focus:bg-[rgba(255,255,255,0.08)]"
+          className="h-12 w-full appearance-none rounded-[18px] border border-[var(--line-soft)] bg-[var(--bg-card)] px-4 pr-11 text-sm font-medium text-[var(--text-primary)] outline-none transition-[border-color,background-color] duration-[var(--motion-base)] ease-[var(--ease-smooth)] focus:border-[var(--line-strong)] focus:bg-[var(--bg-card-soft)]"
         >
           {options.map((option) => (
-            <option key={option.value} value={option.value} className="bg-[#101820] text-white">
+            <option key={option.value} value={option.value} className="bg-[var(--bg-panel)] text-[var(--text-primary)]">
               {option.label}
             </option>
           ))}
         </select>
-        <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[rgba(222,230,238,0.58)]">
+        <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[var(--text-muted)]">
           <MaterialIcon className="text-[20px]" name="expand_more" />
         </span>
       </span>
@@ -366,39 +366,39 @@ export function MobileFilterScreen({
   ];
 
   return (
-    <MobileAppShell>
+    <MobileAppShell hideBottomNav={isSheetOpen}>
       <div className="space-y-4">
-        <header className="rounded-[28px] border border-[rgba(255,255,255,0.06)] bg-[rgba(7,16,25,0.9)] px-4 py-4 shadow-[0_16px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+        <header className="rounded-[28px] border border-[var(--line-soft)] bg-[var(--panel-surface)] px-4 py-4 shadow-[var(--panel-shadow)] backdrop-blur-xl">
           <div className="flex items-start justify-between gap-3">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <Link
                   href="/"
                   aria-label="Back to home"
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] text-white"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--line-soft)] bg-[var(--bg-card)] text-[var(--text-primary)]"
                 >
                   <MaterialIcon className="text-[20px]" name="arrow_back" />
                 </Link>
                 <div>
-                  <p className="text-[0.72rem] uppercase tracking-[0.24em] text-[rgba(157,216,255,0.74)]">
+                  <p className="text-[0.72rem] uppercase tracking-[0.24em] text-[var(--accent-strong)]">
                     Mobile Browse
                   </p>
-                  <h1 className="text-[1.4rem] font-semibold text-white">Filter anime</h1>
+                  <h1 className="text-[1.4rem] font-semibold text-[var(--text-primary)]">Filter anime</h1>
                 </div>
               </div>
-              <p className="pl-12 text-sm text-[rgba(222,230,238,0.68)]">
+              <p className="pl-12 text-sm text-[var(--text-secondary)]">
                 {items.length} result{items.length === 1 ? "" : "s"} ready
               </p>
             </div>
             <button
               type="button"
               onClick={openSheet}
-              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[rgba(77,193,255,0.22)] bg-[rgba(42,170,255,0.14)] px-4 py-2 text-sm font-semibold text-[#9dd8ff]"
+              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--accent-soft)] px-4 py-2 text-sm font-semibold text-[var(--accent-strong)]"
             >
               <MaterialIcon className="text-[20px]" name="tune" />
               Filter
               {advancedFilterCount > 0 ? (
-                <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-[rgba(255,255,255,0.14)] px-1.5 text-[0.74rem] text-white">
+                <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-[var(--bg-card-soft)] px-1.5 text-[0.74rem] text-[var(--text-primary)]">
                   {advancedFilterCount}
                 </span>
               ) : null}
@@ -407,21 +407,21 @@ export function MobileFilterScreen({
 
           <form className="mt-4 flex items-center gap-2" onSubmit={submitSearch}>
             <label className="relative min-w-0 flex-1">
-              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[rgba(222,230,238,0.46)]">
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[var(--text-muted)]">
                 <MaterialIcon className="text-[19px]" name="search" />
               </span>
               <input
                 value={searchValue}
                 placeholder="Search title"
                 onChange={(event) => setSearchValue(event.target.value)}
-                className="h-12 w-full rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] pl-10 pr-10 text-sm text-white outline-none placeholder:text-[rgba(222,230,238,0.42)] focus:border-[rgba(42,170,255,0.42)] focus:bg-[rgba(255,255,255,0.06)]"
+                className="h-12 w-full rounded-full border border-[var(--line-soft)] bg-[var(--bg-card)] pl-10 pr-10 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--line-strong)] focus:bg-[var(--bg-card-soft)]"
               />
               {searchValue.trim() ? (
                 <button
                   type="button"
                   aria-label="Clear search"
                   onClick={clearSearch}
-                  className="absolute inset-y-0 right-3 inline-flex items-center text-[rgba(222,230,238,0.56)]"
+                  className="absolute inset-y-0 right-3 inline-flex items-center text-[var(--text-muted)]"
                 >
                   <MaterialIcon className="text-[18px]" name="close" />
                 </button>
@@ -429,17 +429,17 @@ export function MobileFilterScreen({
             </label>
             <button
               type="submit"
-              className="flex h-12 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#2aa9ff,#2bd6c4)] px-4 text-sm font-semibold text-[#04131d] shadow-[0_16px_30px_rgba(41,167,255,0.22)]"
+              className="flex h-12 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--accent-strong),var(--accent))] px-4 text-sm font-semibold text-[var(--bg-base)] shadow-[0_16px_30px_var(--accent-soft)]"
             >
               Search
             </button>
           </form>
 
           <div className="mt-4 flex items-center justify-between gap-2">
-            <p className="text-[0.72rem] uppercase tracking-[0.22em] text-[rgba(222,230,238,0.42)]">
+            <p className="text-[0.72rem] uppercase tracking-[0.22em] text-[var(--text-muted)]">
               Applied filters
             </p>
-            <span className="text-[0.76rem] text-[rgba(222,230,238,0.58)]">
+            <span className="text-[0.76rem] text-[var(--text-secondary)]">
               Page {currentPage} of {totalPages}
             </span>
           </div>
@@ -451,14 +451,14 @@ export function MobileFilterScreen({
                   key={chip.id}
                   type="button"
                   onClick={chip.onRemove}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.05)] px-3 py-2 text-[0.75rem] font-medium text-[rgba(255,255,255,0.9)]"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--line-soft)] bg-[var(--bg-card)] px-3 py-2 text-[0.75rem] font-medium text-[var(--text-primary)]"
                 >
                   <span>{chip.label}</span>
-                  <MaterialIcon className="text-[16px] text-[rgba(222,230,238,0.58)]" name="close" />
+                  <MaterialIcon className="text-[16px] text-[var(--text-muted)]" name="close" />
                 </button>
               ))
             ) : (
-              <div className="rounded-full border border-dashed border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.03)] px-3 py-2 text-[0.78rem] text-[rgba(222,230,238,0.56)]">
+              <div className="rounded-full border border-dashed border-[var(--line-soft)] bg-[var(--bg-card)] px-3 py-2 text-[0.78rem] text-[var(--text-secondary)]">
                 Search by title or open the sheet to refine results.
               </div>
             )}
@@ -466,14 +466,14 @@ export function MobileFilterScreen({
         </header>
 
         {items.length === 0 ? (
-          <section className="rounded-[30px] border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.04)] px-5 py-12 text-center shadow-[0_20px_44px_rgba(0,0,0,0.22)]">
-            <p className="text-[0.76rem] uppercase tracking-[0.28em] text-[rgba(157,216,255,0.74)]">
+          <section className="rounded-[30px] border border-[var(--line-soft)] bg-[var(--bg-card)] px-5 py-12 text-center shadow-[var(--soft-shadow)]">
+            <p className="text-[0.76rem] uppercase tracking-[0.28em] text-[var(--accent-strong)]">
               No Match
             </p>
-            <h2 className="mt-3 text-[1.45rem] font-semibold text-white">
+            <h2 className="mt-3 text-[1.45rem] font-semibold text-[var(--text-primary)]">
               Nothing matched this filter set
             </h2>
-            <p className="mt-3 text-sm leading-6 text-[rgba(222,230,238,0.68)]">
+            <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
               Try a broader title, switch the year, or remove one of the genre tags.
             </p>
           </section>
@@ -485,25 +485,25 @@ export function MobileFilterScreen({
               ))}
             </div>
 
-            <div className="rounded-[28px] border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.04)] p-3.5 shadow-[0_18px_40px_rgba(0,0,0,0.2)]">
+            <div className="rounded-[28px] border border-[var(--line-soft)] bg-[var(--bg-card)] p-3.5 shadow-[var(--soft-shadow)]">
               <div className="flex items-center justify-between gap-3">
                 <button
                   type="button"
                   onClick={() => updatePage(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="inline-flex h-11 items-center gap-2 rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] px-4 text-sm font-medium text-white disabled:opacity-40"
+                  className="inline-flex h-11 items-center gap-2 rounded-full border border-[var(--line-soft)] bg-[var(--bg-card)] px-4 text-sm font-medium text-[var(--text-primary)] disabled:opacity-40"
                 >
                   <MaterialIcon className="text-[18px]" name="chevron_left" />
                   Prev
                 </button>
                 <div className="text-center">
-                  <p className="mt-1 text-base font-semibold text-white">{currentPage}</p>
+                  <p className="mt-1 text-base font-semibold text-[var(--text-primary)]">{currentPage}</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => updatePage(currentPage + 1)}
                   disabled={currentPage >= totalPages}
-                  className="inline-flex h-11 items-center gap-2 rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] px-4 text-sm font-medium text-white disabled:opacity-40"
+                  className="inline-flex h-11 items-center gap-2 rounded-full border border-[var(--line-soft)] bg-[var(--bg-card)] px-4 text-sm font-medium text-[var(--text-primary)] disabled:opacity-40"
                 >
                   Next
                   <MaterialIcon className="text-[18px]" name="chevron_right" />
@@ -515,7 +515,7 @@ export function MobileFilterScreen({
       </div>
 
       {isSheetOpen ? (
-        <div className="fixed inset-0 z-[80] flex items-end bg-[rgba(2,6,10,0.64)] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-10 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[80] flex items-end bg-[var(--mobile-sheet-overlay)] px-3 pb-[max(1rem,calc(env(safe-area-inset-bottom)+0.75rem))] pt-10 backdrop-blur-[3px]">
           <button
             type="button"
             aria-label="Close filter sheet"
@@ -524,41 +524,41 @@ export function MobileFilterScreen({
           />
           <section
             aria-labelledby="mobile-filter-sheet-title"
-            className="relative mx-auto flex max-h-[88vh] w-full max-w-[440px] flex-col overflow-hidden rounded-[30px] border border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,#101820_0%,#0c141d_100%)] shadow-[0_30px_80px_rgba(0,0,0,0.45)]"
+            className="relative mx-auto flex max-h-[88vh] w-full max-w-[440px] flex-col overflow-hidden rounded-[30px] border border-[var(--line-strong)] bg-[var(--mobile-sheet-surface)] shadow-[var(--mobile-sheet-shadow)]"
           >
-            <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-5 py-4">
+            <div className="flex items-center justify-between border-b border-[var(--line-soft)] bg-[linear-gradient(90deg,var(--accent-soft),transparent_56%)] px-5 py-4">
               <div>
-                <p className="text-[0.72rem] uppercase tracking-[0.22em] text-[rgba(157,216,255,0.74)]">
+                <p className="text-[0.72rem] uppercase tracking-[0.22em] text-[var(--accent-strong)]">
                   Refine Results
                 </p>
-                <h2 id="mobile-filter-sheet-title" className="mt-1 text-[1.2rem] font-semibold text-white">
+                <h2 id="mobile-filter-sheet-title" className="mt-1 text-[1.2rem] font-semibold text-[var(--text-primary)]">
                   Tune the catalog
                 </h2>
               </div>
               <button
                 type="button"
                 onClick={closeSheet}
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] text-white"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--line-soft)] bg-[var(--bg-card-muted)] text-[var(--text-primary)]"
               >
                 <MaterialIcon className="text-[20px]" name="close" />
               </button>
             </div>
 
             <div className="space-y-5 overflow-y-auto px-5 py-5">
-              <div className="rounded-[24px] border border-[rgba(77,193,255,0.16)] bg-[rgba(42,170,255,0.08)] p-4">
+              <div className="rounded-[24px] border border-[var(--line-strong)] bg-[var(--mobile-sheet-section-surface)] p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-[0.7rem] uppercase tracking-[0.22em] text-[rgba(157,216,255,0.74)]">
+                    <p className="text-[0.7rem] uppercase tracking-[0.22em] text-[var(--accent-strong)]">
                       Live result set
                     </p>
-                    <p className="mt-2 text-sm leading-6 text-[rgba(255,255,255,0.86)]">
+                    <p className="mt-2 text-sm leading-6 text-[var(--text-primary)]">
                       Applied filters currently show {items.length} anime. Use Apply when this draft feels right.
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={resetDraftFilters}
-                    className="shrink-0 rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.06)] px-3 py-2 text-[0.75rem] font-semibold uppercase tracking-[0.16em] text-white"
+                    className="shrink-0 rounded-full border border-[var(--line-soft)] bg-[var(--bg-card-muted)] px-3 py-2 text-[0.75rem] font-semibold uppercase tracking-[0.16em] text-[var(--text-primary)]"
                   >
                     Reset all
                   </button>
@@ -589,10 +589,10 @@ export function MobileFilterScreen({
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-[0.7rem] uppercase tracking-[0.22em] text-[rgba(222,230,238,0.58)]">
+                    <p className="text-[0.7rem] uppercase tracking-[0.22em] text-[var(--text-muted)]">
                       Genres
                     </p>
-                    <p className="mt-1 text-sm text-[rgba(222,230,238,0.62)]">
+                    <p className="mt-1 text-sm text-[var(--text-secondary)]">
                       Multiple genres must all match.
                     </p>
                   </div>
@@ -600,7 +600,7 @@ export function MobileFilterScreen({
                     <button
                       type="button"
                       onClick={() => setDraftGenres([])}
-                      className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[rgba(157,216,255,0.84)]"
+                      className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[var(--accent-strong)]"
                     >
                       Clear
                     </button>
@@ -608,18 +608,18 @@ export function MobileFilterScreen({
                 </div>
 
                 <label className="relative block">
-                  <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[rgba(222,230,238,0.46)]">
+                  <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[var(--text-muted)]">
                     <MaterialIcon className="text-[18px]" name="search" />
                   </span>
                   <input
                     value={genreQuery}
                     placeholder="Find genre"
                     onChange={(event) => setGenreQuery(event.target.value)}
-                    className="h-11 w-full rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] pl-10 pr-4 text-sm text-white outline-none placeholder:text-[rgba(222,230,238,0.42)] focus:border-[rgba(42,170,255,0.42)]"
+                    className="h-11 w-full rounded-full border border-[var(--line-soft)] bg-[var(--bg-card)] pl-10 pr-4 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--line-strong)]"
                   />
                 </label>
 
-                <div className="max-h-[280px] overflow-y-auto rounded-[24px] border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.03)] p-3">
+                <div className="max-h-[280px] overflow-y-auto rounded-[24px] border border-[var(--line-soft)] bg-[var(--bg-card)] p-3">
                   <div className="flex flex-wrap gap-2">
                     {filteredGenres.map((genre) => {
                       const selected = draftGenres.includes(genre);
@@ -631,13 +631,13 @@ export function MobileFilterScreen({
                           onClick={() => toggleDraftGenre(genre)}
                           className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-[0.76rem] font-medium transition-[border-color,background-color,color] duration-[var(--motion-base)] ease-[var(--ease-smooth)] ${
                             selected
-                              ? "border-[rgba(77,193,255,0.32)] bg-[rgba(42,170,255,0.16)] text-[#bde8ff]"
-                              : "border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.78)]"
+                              ? "border-[var(--line-strong)] bg-[var(--accent-soft)] text-[var(--accent-strong)]"
+                              : "border-[var(--line-soft)] bg-[var(--bg-card-soft)] text-[var(--text-secondary)]"
                           }`}
                         >
                           <span
                             className={`flex h-4 w-4 items-center justify-center rounded-full ${
-                              selected ? "bg-[rgba(255,255,255,0.14)]" : "bg-[rgba(255,255,255,0.06)]"
+                              selected ? "bg-[var(--bg-card-soft)]" : "bg-[var(--bg-card)]"
                             }`}
                           >
                             <MaterialIcon className="text-[12px]" name={selected ? "done" : "add"} />
@@ -651,18 +651,18 @@ export function MobileFilterScreen({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 border-t border-[rgba(255,255,255,0.06)] bg-[rgba(7,16,25,0.92)] px-5 py-4">
+            <div className="grid grid-cols-2 gap-3 border-t border-[var(--line-soft)] bg-[var(--bg-card-muted)] px-5 py-4">
               <button
                 type="button"
                 onClick={closeSheet}
-                className="flex h-12 items-center justify-center rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] text-sm font-semibold text-white"
+                className="flex h-12 items-center justify-center rounded-full border border-[var(--line-soft)] bg-[var(--bg-card)] text-sm font-semibold text-[var(--text-primary)]"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={applyDraftFilters}
-                className="flex h-12 items-center justify-center rounded-full bg-[linear-gradient(135deg,#2aa9ff,#2bd6c4)] text-sm font-semibold text-[#04131d] shadow-[0_16px_30px_rgba(41,167,255,0.22)]"
+                className="flex h-12 items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--accent-strong),var(--accent))] text-sm font-semibold text-[var(--bg-base)] shadow-[0_16px_30px_var(--accent-soft)]"
               >
                 Apply filters
               </button>

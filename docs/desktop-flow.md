@@ -12,46 +12,46 @@ Desktop routes usually enter through `app/` pages, load data on the server, and 
 
 ```mermaid
 flowchart TD
-    A[app/page.tsx] --> B[getHomePageData()]
-    B --> C[AniList fetches + mapping]
-    C --> D[ResponsiveRender]
-    D -->|desktop| E[DesktopHomeScreen]
-    E --> F[SiteHeader]
-    E --> G[FeaturedHero]
-    E --> H[AnimeGrid]
-    E --> I[RightSidebar]
-    E --> J[SiteFooter]
+    A["Home route"] --> B["Home page loader"]
+    B --> C["AniList fetch and mapping"]
+    C --> D["Responsive render switch"]
+    D -->|desktop| E["Desktop home screen"]
+    E --> F["Site header"]
+    E --> G["Featured hero"]
+    E --> H["Anime grid"]
+    E --> I["Right sidebar"]
+    E --> J["Site footer"]
 ```
 
 ## Browse and Directory Flow
 
 ```mermaid
 flowchart TD
-    A[Browse catalog loader] --> B[getBrowseCatalogRaw]
-    B --> C[Map + dedupe + sort]
-    C --> D[getBrowseCatalog]
-    D --> E[Filter page]
-    D --> F[A-Z directory]
-    D --> G[Bookmarks source]
-    D --> H[Admin anime selector]
-    D --> I[Random route redirect]
+    A["Browse catalog loader"] --> B["Raw catalog fetch"]
+    B --> C["Map dedupe and sort"]
+    C --> D["Public browse catalog"]
+    D --> E["Filter page"]
+    D --> F["A to Z directory"]
+    D --> G["Bookmarks source"]
+    D --> H["Admin anime selector"]
+    D --> I["Random route redirect"]
 ```
 
 ## Watch and Admin Flow
 
 ```mermaid
 flowchart TD
-    A[watch/[slug] route] --> B[getWatchPageData]
-    B --> C{State}
-    C -->|available| D[WatchScreen]
-    C -->|locked| E[WatchUnavailableScreen]
-    C -->|not-found| F[next/notFound]
+    A["Watch route"] --> B["Watch page loader"]
+    B --> C{"State"}
+    C -->|available| D["Watch screen"]
+    C -->|locked| E["Watch unavailable screen"]
+    C -->|not-found| F["Not found"]
 
-    G[admin/page.tsx] --> H[Admin forms]
-    H --> I[Server actions]
-    I --> J[updateSiteSettings]
-    J --> K[data/site-settings.json]
-    I --> L[revalidatePath]
+    G["Admin route"] --> H["Admin forms"]
+    H --> I["Server actions"]
+    I --> J["Update site settings"]
+    J --> K["site-settings.json"]
+    I --> L["Route revalidation"]
 ```
 
 ## Desktop Ownership Notes

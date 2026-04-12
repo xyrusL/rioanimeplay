@@ -17,40 +17,40 @@ That pattern is used by the home, filter, account, and watch routes.
 
 ```mermaid
 flowchart TD
-    A[Incoming request] --> B[App route entry in app/]
-    B --> C[headers() + isLikelyMobileUserAgent()]
-    C --> D[Load route data]
-    D --> E[ResponsiveRender]
-    E -->|mobile| F[Mobile screen component]
-    E -->|desktop| G[Desktop screen component]
+    A["Incoming request"] --> B["App route entry"]
+    B --> C["Header and device guess"]
+    C --> D["Load route data"]
+    D --> E["Responsive render switch"]
+    E -->|mobile| F["Mobile screen component"]
+    E -->|desktop| G["Desktop screen component"]
 ```
 
 ## Mobile Navigation Map
 
 ```mermaid
 flowchart TD
-    H[MobileHomeScreen] --> I[MobileAppShell]
-    I --> J[MobileBottomNav]
-    J --> K[/]
-    J --> L[/bookmarks]
-    J --> M[/filter]
-    J --> N[/account]
-    H --> O[MobileFeaturedCarousel]
-    H --> P[MobileRecentUpdatesSection]
-    L --> Q[MobileBookmarksScreen]
-    M --> R[MobileFilterScreen]
-    N --> S[MobileSettingsScreen]
+    H["Mobile home screen"] --> I["Mobile app shell"]
+    I --> J["Mobile bottom navigation"]
+    J --> K["Home route"]
+    J --> L["Bookmarks route"]
+    J --> M["Filter route"]
+    J --> N["Account route"]
+    H --> O["Featured carousel"]
+    H --> P["Recent updates section"]
+    L --> Q["Bookmarks screen"]
+    M --> R["Filter screen"]
+    N --> S["Settings screen"]
 ```
 
 ## Mobile Watch Flow
 
 ```mermaid
 flowchart TD
-    A[app/watch/[slug]/page.tsx] --> B[getWatchPageData(slug)]
-    B --> C{Result state}
-    C -->|available| D[MobileWatchScreen]
-    C -->|locked| E[MobileWatchUnavailableScreen]
-    C -->|not-found| F[next/notFound]
+    A["Watch route"] --> B["Watch page loader"]
+    B --> C{"Result state"}
+    C -->|available| D["Mobile watch screen"]
+    C -->|locked| E["Mobile unavailable screen"]
+    C -->|not-found| F["Not found"]
 ```
 
 ## Shared Mobile Components
