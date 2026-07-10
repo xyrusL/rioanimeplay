@@ -12,6 +12,7 @@ import {
 import { CustomSelect } from "@/shared/ui/custom-select";
 import { toAnimeSlug } from "@/entities/anime/lib/slug";
 import type { WeeklyTopEntry } from "@/entities/anime/model/types";
+import { AnimatedModal } from "@/shared/ui/animated-modal";
 import { MaterialIcon } from "@/shared/ui/icons/material-icon";
 import { LockdownAction } from "@/shared/ui/lockdown-action";
 import { Panel } from "@/shared/ui/panel";
@@ -216,17 +217,16 @@ export function RightSidebar({
         </Panel>
       </aside>
 
-      {isGenresModalOpen ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(4,5,8,0.88)] px-4 backdrop-blur-md"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="all-genres-title"
-          onClick={() => setIsGenresModalOpen(false)}
-        >
+      <AnimatedModal
+        isOpen={isGenresModalOpen}
+        onClose={() => setIsGenresModalOpen(false)}
+        labelledBy="all-genres-title"
+        backdropClassName="bg-[rgba(4,5,8,0.88)] px-4 backdrop-blur-md"
+        panelClassName="flex max-h-[calc(100vh-3rem)] w-full max-w-[860px] flex-col overflow-hidden rounded-[28px] border border-[rgba(255,207,112,0.18)] bg-[linear-gradient(180deg,rgba(10,12,16,0.995),rgba(8,9,13,0.995))] shadow-[0_36px_96px_rgba(0,0,0,0.62)]"
+      >
+        <>
           <div
-            className="flex max-h-[calc(100vh-3rem)] w-full max-w-[860px] flex-col overflow-hidden rounded-[28px] border border-[rgba(255,207,112,0.18)] bg-[linear-gradient(180deg,rgba(10,12,16,0.995),rgba(8,9,13,0.995))] shadow-[0_36px_96px_rgba(0,0,0,0.62)]"
-            onClick={(event) => event.stopPropagation()}
+            className="flex max-h-[calc(100vh-3rem)] w-full flex-col overflow-hidden"
           >
             <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] bg-[linear-gradient(90deg,rgba(255,207,112,0.06),rgba(255,255,255,0.01)_42%,transparent)] px-5 py-4">
               <div>
@@ -272,8 +272,8 @@ export function RightSidebar({
               </div>
             </div>
           </div>
-        </div>
-      ) : null}
+        </>
+      </AnimatedModal>
     </>
   );
 }

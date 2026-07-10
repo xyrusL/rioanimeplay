@@ -126,12 +126,12 @@ export function RouteProgress() {
   return (
     <div
       aria-hidden="true"
-      className={`pointer-events-none fixed inset-x-0 top-0 z-[500] h-[3px] transition-opacity duration-200 ${
+      className={`pointer-events-none fixed inset-x-0 top-0 z-[500] h-[3px] transition-opacity duration-[var(--motion-base)] ${
         isVisible ? "opacity-100" : "opacity-0"
       }`}
     >
       <div
-        className="h-full bg-[linear-gradient(90deg,var(--accent),var(--accent-strong),var(--accent))] shadow-[0_0_18px_var(--accent-glow)] transition-[width] duration-200 ease-out"
+        className="h-full bg-[linear-gradient(90deg,var(--accent),var(--accent-strong),var(--accent))] shadow-[0_0_18px_var(--accent-glow)] transition-[width] duration-[var(--motion-base)] ease-[var(--ease-soft)]"
         style={{ width: `${progress}%` }}
       />
     </div>

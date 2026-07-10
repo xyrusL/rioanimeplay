@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { AnimatedModal } from "@/shared/ui/animated-modal";
 import { MaterialIcon } from "@/shared/ui/icons/material-icon";
 
 type AnnouncementStripProps = {
@@ -39,12 +40,15 @@ export function AnnouncementStrip({
         </div>
       </section>
 
-      {isOpen ? (
-        <div className="fixed inset-0 z-[420] flex items-center justify-center bg-[var(--modal-overlay)] px-4 backdrop-blur-sm">
+      <AnimatedModal
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        backdropClassName="bg-[var(--modal-overlay)] px-4 backdrop-blur-sm"
+        panelClassName="w-full max-w-[680px] rounded-[30px] border border-[var(--line-strong)] bg-[var(--modal-surface)] p-6 shadow-[var(--modal-shadow)]"
+      >
+        <>
           <div
-            role="dialog"
-            aria-modal="true"
-            className="w-full max-w-[680px] rounded-[30px] border border-[var(--line-strong)] bg-[var(--modal-surface)] p-6 shadow-[var(--modal-shadow)]"
+            className="w-full"
           >
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-2">
@@ -66,8 +70,8 @@ export function AnnouncementStrip({
               </button>
             </div>
           </div>
-        </div>
-      ) : null}
+        </>
+      </AnimatedModal>
     </>
   );
 }

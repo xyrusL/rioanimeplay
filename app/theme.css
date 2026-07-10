@@ -135,9 +135,13 @@
 
   --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-soft: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0.9, 0.25, 1);
+  --motion-micro: 140ms;
   --motion-fast: 180ms;
   --motion-base: 280ms;
   --motion-slow: 420ms;
+  --motion-modal: 340ms;
+  --motion-page: 460ms;
 }
 
 html[data-font-preset="lexend-default"] {

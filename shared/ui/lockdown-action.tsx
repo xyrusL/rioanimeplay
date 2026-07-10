@@ -3,6 +3,8 @@
 import { type ReactNode, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { AnimatedModal } from "@/shared/ui/animated-modal";
+
 type LockdownActionProps = {
   children: ReactNode;
   className: string;
@@ -40,12 +42,15 @@ export function LockdownAction({
         {children}
       </button>
 
-      {isOpen ? (
-        <div className="fixed inset-0 z-[420] flex items-center justify-center bg-[var(--modal-overlay)] px-4 backdrop-blur-sm">
+      <AnimatedModal
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        backdropClassName="bg-[var(--modal-overlay)] px-4 backdrop-blur-sm"
+        panelClassName="w-full max-w-[520px] rounded-[28px] border border-[var(--line-strong)] bg-[var(--modal-surface)] p-6 shadow-[var(--modal-shadow)]"
+      >
+        <>
           <div
-            role="dialog"
-            aria-modal="true"
-            className="w-full max-w-[520px] rounded-[28px] border border-[var(--line-strong)] bg-[var(--modal-surface)] p-6 shadow-[var(--modal-shadow)]"
+            className="w-full"
           >
             <p className="font-display text-[0.82rem] uppercase tracking-[0.24em] text-[var(--accent-strong)]">
               {modalTitle}
@@ -63,8 +68,8 @@ export function LockdownAction({
               </button>
             </div>
           </div>
-        </div>
-      ) : null}
+        </>
+      </AnimatedModal>
     </>
   );
 }

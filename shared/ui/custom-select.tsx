@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 
+import { MOTION_VARIANTS } from "@/shared/lib/motion";
 import { MaterialIcon } from "@/shared/ui/icons/material-icon";
 
 type CustomSelectOption = {
@@ -72,8 +74,14 @@ export function CustomSelect({
           name={isOpen ? "keyboard_arrow_up" : "keyboard_arrow_down"}
         />
       </button>
-      {isOpen ? (
-        <div
+      <AnimatePresence>
+        {isOpen ? (
+          <motion.div
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          variants={MOTION_VARIANTS.dropdown}
+          style={{ originY: 0 }}
           className={`absolute top-full right-0 left-0 z-[80] mt-2 max-h-56 overflow-y-auto rounded-[18px] border border-[var(--line-strong)] bg-[#15161d] p-1.5 shadow-[0_24px_60px_rgba(0,0,0,0.42)] ${menuClassName ?? ""}`}
           role="listbox"
           aria-label={label}
@@ -101,8 +109,9 @@ export function CustomSelect({
               </button>
             );
           })}
-        </div>
-      ) : null}
+        </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }

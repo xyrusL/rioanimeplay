@@ -2,12 +2,14 @@
 
 import type { ReactNode } from "react";
 import { useActionState, useEffect, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 
 import {
   INITIAL_ADMIN_ACTION_STATE,
   type AdminActionState
 } from "@/app/admin/action-state";
+import { MOTION_VARIANTS } from "@/shared/lib/motion";
 import { MaterialIcon } from "@/shared/ui/icons/material-icon";
 
 type AdminActionFormProps = {
@@ -59,35 +61,44 @@ function AdminFeedbackToast({
   const style = STATUS_STYLES[state.status];
 
   return (
-    <div className="pointer-events-none fixed top-5 right-5 z-[460] w-full max-w-[360px] px-4 sm:px-0">
-      <div
-        className={`pointer-events-auto rounded-[24px] border bg-[var(--modal-surface)] px-4 py-4 shadow-[var(--modal-shadow)] backdrop-blur-md ${style.ring}`}
-        role="status"
-        aria-live="polite"
+    <AnimatePresence>
+      <motion.div
+        key={`${state.status}-${state.title}`}
+        initial="initial"
+        animate="animate"
+        exit="exit"
+        variants={MOTION_VARIANTS.toast}
+        className="pointer-events-none fixed top-5 right-5 z-[460] w-full max-w-[360px] px-4 sm:px-0"
       >
-        <div className="flex items-start gap-3">
-          <span
-            className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] border border-[rgba(255,255,255,0.08)] bg-[var(--modal-section-surface)] ${style.accent}`}
-          >
-            <MaterialIcon className="text-[20px]" filled name={style.icon} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-white">{state.title}</p>
-            <p className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">
-              {state.message}
-            </p>
+        <div
+          className={`pointer-events-auto rounded-[24px] border bg-[var(--modal-surface)] px-4 py-4 shadow-[var(--modal-shadow)] backdrop-blur-md ${style.ring}`}
+          role="status"
+          aria-live="polite"
+        >
+          <div className="flex items-start gap-3">
+            <span
+              className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] border border-[rgba(255,255,255,0.08)] bg-[var(--modal-section-surface)] ${style.accent}`}
+            >
+              <MaterialIcon className="text-[20px]" filled name={style.icon} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-white">{state.title}</p>
+              <p className="mt-1 text-sm leading-6 text-[var(--text-secondary)]">
+                {state.message}
+              </p>
+            </div>
+            <button
+              type="button"
+              aria-label="Dismiss save status"
+              onClick={onClose}
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] text-[var(--text-secondary)] transition-[border-color,color] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:border-[rgba(255,255,255,0.18)] hover:text-white"
+            >
+              <MaterialIcon className="text-[16px]" name="close" />
+            </button>
           </div>
-          <button
-            type="button"
-            aria-label="Dismiss save status"
-            onClick={onClose}
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] text-[var(--text-secondary)] transition-[border-color,color] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:border-[rgba(255,255,255,0.18)] hover:text-white"
-          >
-            <MaterialIcon className="text-[16px]" name="close" />
-          </button>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AnimatePresence } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 
 import type { HomeAnimeItem } from "@/entities/anime/model/types";
@@ -16,6 +17,7 @@ import {
 import { MobilePosterCard } from "@/features/mobile/shared/mobile-anime-card";
 import { MobileAppShell } from "@/features/mobile/shared/mobile-app-shell";
 import { MaterialIcon } from "@/shared/ui/icons/material-icon";
+import { AnimatedModal } from "@/shared/ui/animated-modal";
 
 type MobileFilterScreenProps = {
   catalog: HomeAnimeItem[];
@@ -486,17 +488,20 @@ export function MobileFilterScreen({
         )}
       </div>
 
+      <AnimatePresence>
       {isSheetOpen ? (
-        <div className="fixed inset-0 z-[80] flex items-end bg-[var(--mobile-sheet-overlay)] px-3 pb-[max(1rem,calc(env(safe-area-inset-bottom)+0.75rem))] pt-10 backdrop-blur-[3px]">
-          <button
-            type="button"
-            aria-label="Close filter sheet"
-            onClick={closeSheet}
-            className="absolute inset-0"
-          />
+        <AnimatedModal
+          isOpen={isSheetOpen}
+          onClose={closeSheet}
+          labelledBy="mobile-filter-sheet-title"
+          placement="bottom"
+          backdropClassName="z-[80] bg-[var(--mobile-sheet-overlay)] px-3 pt-10 pb-[max(1rem,calc(env(safe-area-inset-bottom)+0.75rem))] backdrop-blur-[3px]"
+          panelClassName="relative mx-auto flex max-h-[88vh] w-full max-w-[440px] flex-col overflow-hidden rounded-[30px] border border-[var(--line-strong)] bg-[var(--mobile-sheet-surface)] shadow-[var(--mobile-sheet-shadow)]"
+        >
+          <>
           <section
             aria-labelledby="mobile-filter-sheet-title"
-            className="relative mx-auto flex max-h-[88vh] w-full max-w-[440px] flex-col overflow-hidden rounded-[30px] border border-[var(--line-strong)] bg-[var(--mobile-sheet-surface)] shadow-[var(--mobile-sheet-shadow)]"
+            className="relative flex max-h-[88vh] w-full flex-col overflow-hidden"
           >
             <div className="flex items-center justify-between border-b border-[var(--line-soft)] bg-[linear-gradient(90deg,var(--accent-soft),transparent_56%)] px-5 py-4">
               <div>
@@ -640,8 +645,10 @@ export function MobileFilterScreen({
               </button>
             </div>
           </section>
-        </div>
+          </>
+        </AnimatedModal>
       ) : null}
+      </AnimatePresence>
     </MobileAppShell>
   );
 }

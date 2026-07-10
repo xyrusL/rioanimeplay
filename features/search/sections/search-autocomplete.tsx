@@ -2,10 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { buildFilterHref, FILTER_ALL_YEARS } from "@/features/browse/model/filter-utils";
+import { MOTION_VARIANTS } from "@/shared/lib/motion";
 import { MaterialIcon } from "@/shared/ui/icons/material-icon";
 
 type SearchResult = {
@@ -143,8 +145,16 @@ export function SearchAutocomplete({ className }: SearchAutocompleteProps) {
         </button>
       ) : null}
 
-      {isOpen && query.trim().length >= 1 ? (
-        <div className="absolute left-0 right-0 top-[calc(100%+10px)] z-[320] overflow-hidden rounded-[24px] border border-[rgba(141,114,255,0.18)] bg-[var(--search-surface)] shadow-[0_28px_80px_rgba(0,0,0,0.58)]">
+      <AnimatePresence>
+        {isOpen && query.trim().length >= 1 ? (
+        <motion.div
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          variants={MOTION_VARIANTS.dropdown}
+          style={{ originY: 0 }}
+          className="absolute left-0 right-0 top-[calc(100%+10px)] z-[320] overflow-hidden rounded-[24px] border border-[rgba(141,114,255,0.18)] bg-[var(--search-surface)] shadow-[0_28px_80px_rgba(0,0,0,0.58)]"
+        >
           {isLoading ? (
             <div className="min-h-[96px] bg-[var(--search-status-surface)] px-5 py-6 text-sm font-medium text-[var(--text-primary)]">
               Searching anime...
@@ -229,8 +239,9 @@ export function SearchAutocomplete({ className }: SearchAutocompleteProps) {
               </Link>
             </>
           )}
-        </div>
+        </motion.div>
       ) : null}
+      </AnimatePresence>
     </div>
   );
 }

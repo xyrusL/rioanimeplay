@@ -1,5 +1,6 @@
 "use client";
 
+import { AnimatePresence } from "motion/react";
 import { MobileFeaturedCarousel } from "@/features/mobile/home/mobile-featured-carousel";
 import { MobileRecentUpdatesSection } from "@/features/mobile/home/mobile-recent-updates-section";
 import { MobileAppShell } from "@/features/mobile/shared/mobile-app-shell";
@@ -9,6 +10,7 @@ import {
 } from "@/features/mobile/shared/mobile-anime-card";
 import type { HomePageData } from "@/entities/anime/model/types";
 import { SearchAutocomplete } from "@/features/search/sections/search-autocomplete";
+import { AnimatedModal } from "@/shared/ui/animated-modal";
 import type { SiteSettings } from "@/shared/lib/site-settings";
 import { MaterialIcon } from "@/shared/ui/icons/material-icon";
 import Link from "next/link";
@@ -67,20 +69,15 @@ function MobileAnnouncementSheet({
   title: string;
 }) {
   return (
-    <div className="fixed inset-0 z-[420]">
-      <button
-        type="button"
-        aria-label="Close announcement details"
-        onClick={onClose}
-        className="absolute inset-0 bg-[var(--mobile-sheet-overlay)] backdrop-blur-[3px]"
-      />
-      <div className="absolute inset-x-0 bottom-[max(1rem,calc(env(safe-area-inset-bottom)+0.75rem))] px-3 sm:px-4">
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="mobile-announcement-title"
-          className="relative mx-auto max-h-[min(70vh,560px)] max-w-[420px] overflow-hidden rounded-[30px] border border-[var(--line-strong)] bg-[var(--mobile-sheet-surface)] shadow-[var(--mobile-sheet-shadow)]"
-        >
+    <AnimatedModal
+      isOpen
+      onClose={onClose}
+      labelledBy="mobile-announcement-title"
+      placement="bottom"
+      backdropClassName="z-[420] bg-[var(--mobile-sheet-overlay)] px-3 pt-10 pb-[max(1rem,calc(env(safe-area-inset-bottom)+0.75rem))] backdrop-blur-[3px] sm:px-4"
+      panelClassName="relative mx-auto max-h-[min(70vh,560px)] w-full max-w-[420px] overflow-hidden rounded-[30px] border border-[var(--line-strong)] bg-[var(--mobile-sheet-surface)] shadow-[var(--mobile-sheet-shadow)]"
+    >
+      <>
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-[radial-gradient(circle_at_bottom,var(--accent-soft),transparent_72%)] opacity-80" />
           <div className="relative border-b border-[var(--line-soft)] bg-[linear-gradient(90deg,var(--accent-soft),transparent_56%)] px-5 py-4">
             <div className="flex items-start justify-between gap-4">
@@ -118,9 +115,8 @@ function MobileAnnouncementSheet({
               Close notice
             </button>
           </div>
-        </div>
-      </div>
-    </div>
+      </>
+    </AnimatedModal>
   );
 }
 
@@ -195,6 +191,7 @@ export function MobileHomeScreen({
 
         <MobileRecentUpdatesSection items={recentUpdateItems} />
 
+        <AnimatePresence>
         {isAnnouncementOpen ? (
           <MobileAnnouncementSheet
             message={siteSettings.announcement.message}
@@ -202,6 +199,7 @@ export function MobileHomeScreen({
             title={siteSettings.announcement.title}
           />
         ) : null}
+        </AnimatePresence>
       </div>
     </MobileAppShell>
   );
