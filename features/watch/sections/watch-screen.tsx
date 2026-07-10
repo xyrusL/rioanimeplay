@@ -244,7 +244,7 @@ export function WatchScreen({ anime }: WatchScreenProps) {
                 <Image
                   fill
                   alt={anime.title}
-                  className="scale-102 object-cover blur-lg opacity-72 saturate-[1.01]"
+                  className="scale-[1.04] object-cover blur-[3px] opacity-45 saturate-[0.9]"
                   sizes="230px"
                   src={anime.coverImage}
                 />
