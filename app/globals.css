@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "plyr/dist/plyr.css";
 @import "./theme.css";
 
 @font-face {
@@ -9,148 +10,88 @@
   src: url("/fonts/material-symbols-rounded.ttf") format("truetype");
 }
 
-* {
-  box-sizing: border-box;
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+
+.rioanime-player { --plyr-color-main: var(--accent-strong); --plyr-video-background: #050508; --plyr-video-control-color: var(--text-primary); --plyr-video-control-background-hover: var(--accent-strong); --plyr-menu-background: rgba(17,17,23,.96); --plyr-menu-color: var(--text-primary); --plyr-menu-border-color: var(--line-soft); --plyr-tooltip-background: rgba(17,17,23,.96); --plyr-tooltip-color: var(--text-primary); height: 100%; }
+.rioanime-player .plyr, .rioanime-player .plyr__video-wrapper { height: 100%; }
+.rioanime-player .plyr__control--overlaid { border: 1px solid var(--line-strong); box-shadow: 0 18px 48px rgba(0,0,0,.34); }
+.rioanime-player .plyr--video .plyr__controls { background: linear-gradient(transparent,rgba(5,5,8,.94)); padding: 42px 18px 14px; }
+@media (max-width: 639px) {
+  .rioanime-player--compact .rioanime-player :is(video,.plyr__video-embed,.plyr__video-wrapper) { object-fit: contain; }
+  .rioanime-player--compact .rioanime-player .plyr--video .plyr__controls { gap: 3px; padding: 34px 8px 8px; }
+  .rioanime-player--compact .rioanime-player .plyr__controls .plyr__control { padding: 6px; }
+  .rioanime-player--compact .rioanime-player .plyr__controls .plyr__control svg { height: 16px; width: 16px; }
+  .rioanime-player--compact .rioanime-player .plyr__progress__container { min-width: 0; }
+  .rioanime-player--compact .rioanime-player .plyr__volume { min-width: auto; width: auto; }
+  .rioanime-player--compact .rioanime-player .plyr__volume input { display: none; }
+  .rioanime-player--compact .rioanime-player [data-plyr="restart"],
+  .rioanime-player--compact .rioanime-player [data-plyr="rewind"],
+  .rioanime-player--compact .rioanime-player [data-plyr="fast-forward"],
+  .rioanime-player--compact .rioanime-player [data-plyr="pip"] { display: none; }
 }
 
-html,
-body {
-  margin: 0;
-  min-height: 100%;
-}
+body { background: radial-gradient(circle at top left,var(--body-radial-left),transparent 26%),radial-gradient(circle at top right,var(--body-radial-right),transparent 24%),linear-gradient(180deg,var(--body-gradient-start) 0%,var(--body-gradient-end) 100%); color: var(--text-primary); font-family: var(--font-body-family),"Segoe UI Variable Text","Trebuchet MS",Verdana,sans-serif; font-size: 15px; }
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font: inherit; }
+button, [role="button"], a, summary, input[type="button"], input[type="submit"], input[type="reset"] { cursor: pointer; transition-timing-function: var(--ease-smooth); }
+::selection { background: var(--selection-bg); color: var(--text-primary); }
+.font-display { font-family: var(--font-display-family),"Segoe UI Variable Text","Trebuchet MS",Verdana,sans-serif; letter-spacing: .06em; }
 
-body {
-  background:
-    radial-gradient(circle at top left, var(--body-radial-left), transparent 26%),
-    radial-gradient(circle at top right, var(--body-radial-right), transparent 24%),
-    linear-gradient(180deg, var(--body-gradient-start) 0%, var(--body-gradient-end) 100%);
-  color: var(--text-primary);
-  font-family: var(--font-body-family), "Segoe UI Variable Text", "Trebuchet MS",
-    Verdana, sans-serif;
-  font-size: 15px;
-}
+@layer base { .material-symbols-rounded { font-family: "Material Symbols Rounded"; font-weight: normal; font-style: normal; font-size: inherit; line-height: 1; letter-spacing: normal; text-transform: none; display: inline-block; white-space: nowrap; word-wrap: normal; direction: ltr; -webkit-font-smoothing: antialiased; font-variation-settings: "FILL" 0,"wght" 400,"GRAD" 0,"opsz" 24; } }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
+.site-shell { position: relative; }
+.desktop-shell { max-width: 1560px; }
+.desktop-shell--watch { max-width: 1400px; }
+.site-shell::before { content: ""; position: fixed; inset: 0; pointer-events: none; opacity: .08; background-image: linear-gradient(var(--line-soft) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px); background-size: 120px 120px,120px 120px; mask-image: radial-gradient(circle at center,black 42%,transparent 100%); }
 
-button,
-input,
-select {
-  font: inherit;
-}
+.admin-shell { --admin-canvas:#0d1017; --admin-surface:#151923; --admin-surface-muted:#11141c; --admin-input:#10141d; --admin-border:#303747; --admin-text:#eef1f6; --admin-muted:#98a2b4; --admin-subtle:#7f899d; --admin-accent:#596fe5; --admin-accent-soft:#202a4c; --admin-accent-text:#aebcff; --admin-success:#70d5ad; --admin-danger:#ff9ca8; min-height:100vh; background:var(--admin-canvas); color:var(--admin-text); font-family:var(--font-manrope),sans-serif; font-size:16px; line-height:1.55; }
+.admin-shell[data-admin-theme="slate"] { --admin-canvas:#11151b; --admin-surface:#1b2028; --admin-surface-muted:#151a21; --admin-input:#11161d; --admin-border:#3b4552; --admin-text:#f0f3f6; --admin-muted:#a9b3bf; --admin-subtle:#8793a1; }
+.admin-shell[data-admin-font-family="lexend"] { font-family:var(--font-lexend),sans-serif; }
+.admin-shell[data-admin-font-family="outfit"] { font-family:var(--font-outfit),sans-serif; }
+.admin-shell[data-admin-font-family="sora"] { font-family:var(--font-sora),sans-serif; }
+.admin-shell[data-admin-font-size="large"] { font-size:17px; }
+.admin-shell[data-admin-font-size="extra-large"] { font-size:18px; }
+.admin-shell[data-admin-accent="violet"] { --admin-accent:#865de8; --admin-accent-soft:#30234f; --admin-accent-text:#c9b5ff; }
+.admin-shell[data-admin-accent="rose"] { --admin-accent:#d9577c; --admin-accent-soft:#42202d; --admin-accent-text:#ffb1c6; }
+.admin-shell[data-admin-accent="cyan"] { --admin-accent:#168fb3; --admin-accent-soft:#153643; --admin-accent-text:#8cdcf2; }
+.admin-shell[data-admin-accent="amber"] { --admin-accent:#c1842d; --admin-accent-soft:#3f301b; --admin-accent-text:#f4c980; }
+.admin-shell :is(a,button,input,select,textarea):focus-visible { outline:2px solid var(--admin-accent); outline-offset:2px; }
+.admin-card { border:1px solid var(--admin-border); border-radius:1rem; background:var(--admin-surface); color:var(--admin-text); }
+.admin-input { border:1px solid var(--admin-border); background:var(--admin-input); color:var(--admin-text); outline:none; }
+.admin-label { color:var(--admin-muted); font-size:.78em; font-weight:700; }
+.admin-eyebrow { color:var(--admin-accent-text); font-size:.75em; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+.admin-support { color:var(--admin-subtle); font-size:.82em; }
+.admin-button-primary,.admin-button-secondary { display:inline-flex; min-height:2.65rem; align-items:center; justify-content:center; gap:.45rem; border-radius:.75rem; padding:.65rem 1rem; font-size:.78em; font-weight:800; }
+.admin-button-primary { background:var(--admin-accent); color:#fff; }
+.admin-button-secondary { border:1px solid var(--admin-border); color:var(--admin-muted); }
+.admin-shell [class*="text-[8px]"],.admin-shell [class*="text-[9px]"],.admin-shell [class*="text-[10px]"] { font-size:.75em !important; }
+.admin-shell [class*="text-[11px]"] { font-size:.78em !important; }
+.admin-shell [class*="text-[12px]"] { font-size:.82em !important; }
+.admin-shell button.group.flex.w-full.items-center { min-height:3rem; gap:.5rem; padding:.375rem .5rem; }
+.admin-shell button.group.flex.w-full.items-center > :is(img,span:first-child) { width:1.75rem; height:2.5rem; border-radius:.25rem; }
+.admin-shell button.group.flex.w-full.items-center > span:last-child { font-size:.75rem; line-height:1rem; }
 
-button,
-[role="button"],
-a,
-summary,
-input[type="button"],
-input[type="submit"],
-input[type="reset"] {
-  cursor: pointer;
-}
+/* Keep member details dense, and scroll long watch histories independently. */
+.admin-shell [role="dialog"][aria-labelledby="member-detail-title"] > section { max-width:52rem; }
+.admin-shell [role="dialog"][aria-labelledby="member-detail-title"] header { padding:.75rem 1rem; }
+.admin-shell [role="dialog"][aria-labelledby="member-detail-title"] header h2 { font-size:1rem; }
+.admin-shell [role="dialog"][aria-labelledby="member-detail-title"] header p { font-size:.68rem !important; }
+.admin-shell [role="dialog"][aria-labelledby="member-detail-title"] > section > div { padding:1rem; }
+.admin-shell [role="dialog"][aria-labelledby="member-detail-title"] h3 { font-size:.78rem; }
+.admin-shell [role="dialog"][aria-labelledby="member-detail-title"] [class*="text-[8px]"],
+.admin-shell [role="dialog"][aria-labelledby="member-detail-title"] [class*="text-[9px]"] { font-size:.62rem !important; }
+.admin-shell [role="dialog"][aria-labelledby="member-detail-title"] [class*="text-[10px]"] { font-size:.68rem !important; }
+.admin-shell [role="dialog"][aria-labelledby="member-detail-title"] [class*="text-[11px]"] { font-size:.72rem !important; }
+.admin-shell [role="dialog"][aria-labelledby="member-detail-title"] [class*="text-[12px]"] { font-size:.75rem !important; }
+.admin-shell [role="dialog"][aria-labelledby="member-detail-title"] section:nth-child(2) article > p:first-of-type { font-size:1.25rem; }
+.admin-shell [role="dialog"][aria-labelledby="member-detail-title"] dl > div,
+.admin-shell [role="dialog"][aria-labelledby="member-detail-title"] article { padding:.65rem .8rem; }
+.admin-shell [role="dialog"][aria-labelledby="member-detail-title"] section:last-child .divide-y > article { min-height:3.5rem; }
+.admin-shell [role="dialog"][aria-labelledby="member-detail-title"] section:last-child .divide-y:has(> article:nth-child(6)) { max-height:17.5rem; overflow-y:auto; }
 
-a,
-button,
-[role="button"],
-summary,
-input[type="button"],
-input[type="submit"],
-input[type="reset"] {
-  transition-timing-function: var(--ease-smooth);
-}
-
-::selection {
-  background: var(--selection-bg);
-  color: var(--text-primary);
-}
-
-.font-display {
-  font-family: var(--font-display-family), "Segoe UI Variable Text", "Trebuchet MS",
-    Verdana, sans-serif;
-  letter-spacing: 0.06em;
-}
-
-@layer base {
-  .material-symbols-rounded {
-    font-family: "Material Symbols Rounded";
-    font-weight: normal;
-    font-style: normal;
-    font-size: inherit;
-    line-height: 1;
-    letter-spacing: normal;
-    text-transform: none;
-    display: inline-block;
-    white-space: nowrap;
-    word-wrap: normal;
-    direction: ltr;
-    -webkit-font-smoothing: antialiased;
-    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
-  }
-}
-
-.site-shell {
-  position: relative;
-}
-
-.desktop-shell {
-  max-width: 1560px;
-}
-
-.desktop-shell--watch {
-  max-width: 1400px;
-}
-
-.site-shell::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.08;
-  background-image:
-    linear-gradient(var(--line-soft) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-  background-size: 120px 120px, 120px 120px;
-  mask-image: radial-gradient(circle at center, black 42%, transparent 100%);
-}
-
-::-webkit-scrollbar {
-  width: 11px;
-  height: 11px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--scrollbar-track);
-}
-
-::-webkit-scrollbar-thumb {
-  background: linear-gradient(
-    180deg,
-    var(--scrollbar-thumb-start),
-    var(--scrollbar-thumb-end)
-  );
-  border: 2px solid var(--scrollbar-track);
-  border-radius: 999px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 1ms !important;
-    animation-iteration-count: 1 !important;
-    scroll-behavior: auto !important;
-    transition-duration: 1ms !important;
-  }
-}
-
-@media (min-width: 1800px) {
-  .desktop-shell {
-    max-width: 1680px;
-  }
-
-  .desktop-shell--watch {
-    max-width: 1520px;
-  }
-}
+::-webkit-scrollbar { width:11px; height:11px; }
+::-webkit-scrollbar-track { background:var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background:linear-gradient(180deg,var(--scrollbar-thumb-start),var(--scrollbar-thumb-end)); border:2px solid var(--scrollbar-track); border-radius:999px; }
+@media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:1ms !important; animation-iteration-count:1 !important; scroll-behavior:auto !important; transition-duration:1ms !important; } }
+@media (min-width:1800px) { .desktop-shell { max-width:1680px; } .desktop-shell--watch { max-width:1520px; } }

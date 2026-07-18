@@ -22,7 +22,7 @@ export function WatchUnavailableScreen({
                 <MaterialIcon className="text-[26px]" name="movie_off" />
               </div>
               <p className="font-display text-[0.82rem] uppercase tracking-[0.24em] text-[var(--accent-strong)]">
-                Temporary unavailable
+                Unavailable
               </p>
               </div>
               <Link

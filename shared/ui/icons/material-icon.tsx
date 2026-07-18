@@ -14,7 +14,7 @@ export function MaterialIcon({
   return (
     <span
       aria-hidden="true"
-      className={`material-symbols-rounded inline-block select-none whitespace-nowrap align-middle not-italic leading-none ${className ?? ""}`}
+      className={`material-symbols-rounded inline-flex shrink-0 items-center justify-center select-none whitespace-nowrap not-italic leading-[1] [width:1em] [height:1em] ${className ?? ""}`}
       style={{
         fontFamily: '"Material Symbols Rounded"',
         fontVariationSettings: filled

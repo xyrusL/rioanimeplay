@@ -7,10 +7,10 @@ import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 
 import { formatDecimalScore } from "@/entities/anime/lib/formatters";
-import { toAnimeSlug } from "@/entities/anime/lib/slug";
 import type { HomeAnimeItem } from "@/entities/anime/model/types";
 import {
   getBookmarkedAnimeIds,
+  LIBRARY_CHANGE_EVENT,
   toggleAnimeBookmark
 } from "@/shared/lib/watch-storage";
 import { MaterialIcon } from "@/shared/ui/icons/material-icon";
@@ -34,18 +34,26 @@ export function MobileFeaturedCarousel({
   const [bookmarkedIds, setBookmarkedIds] = useState<number[]>([]);
 
   useEffect(() => {
-    setBookmarkedIds(getBookmarkedAnimeIds());
+    function refreshBookmarks() {
+      setBookmarkedIds(getBookmarkedAnimeIds());
+    }
+
+    refreshBookmarks();
 
     const handleStorage = (event: StorageEvent) => {
       if (event.key && event.key !== "rioanime:bookmarks") {
         return;
       }
 
-      setBookmarkedIds(getBookmarkedAnimeIds());
+      refreshBookmarks();
     };
 
     window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+    window.addEventListener(LIBRARY_CHANGE_EVENT, refreshBookmarks);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener(LIBRARY_CHANGE_EVENT, refreshBookmarks);
+    };
   }, []);
 
   useEffect(() => {
@@ -82,7 +90,7 @@ export function MobileFeaturedCarousel({
       <div className="overflow-hidden" ref={emblaRef}>
         <div className="flex">
           {featured.map((item) => {
-            const href = `/watch/${toAnimeSlug(item.title)}`;
+            const href = `/watch/${encodeURIComponent(item.urlSlug)}`;
             const isBookmarked = bookmarkedIds.includes(item.id);
 
             return (
@@ -92,11 +100,11 @@ export function MobileFeaturedCarousel({
                     fill
                     priority
                     alt={item.title}
-                    className="object-cover"
+                    className="object-cover object-center"
                     sizes="(max-width: 1023px) 100vw, 420px"
                     src={item.bannerImage ?? item.coverImage}
                   />
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,10,15,0.22),rgba(5,10,15,0.68)_48%,rgba(5,10,15,0.96))]" />
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,10,15,0.2),rgba(5,10,15,0.58)_48%,rgba(5,10,15,0.96))]" />
                   <div
                     className="absolute inset-x-[-20%] bottom-[-10%] h-[55%] rounded-full blur-3xl"
                     style={{ background: `${item.accent}55` }}
@@ -128,11 +136,12 @@ export function MobileFeaturedCarousel({
 
                     <div className="mt-auto flex min-h-0 flex-col justify-end gap-4">
                       <div className="space-y-3">
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex min-w-0 flex-nowrap gap-2 overflow-hidden">
                           {item.genres.slice(0, 3).map((genre) => (
                             <span
                               key={genre}
-                              className="rounded-full border border-[var(--line-soft)] bg-[var(--badge-dark)] px-3 py-1.5 text-[0.68rem] uppercase tracking-[0.18em] text-[var(--text-secondary)] backdrop-blur-sm"
+                              title={genre}
+                              className="min-w-0 truncate rounded-full border border-[var(--line-soft)] bg-[var(--badge-dark)] px-3 py-1.5 text-[0.68rem] uppercase tracking-[0.18em] text-[var(--text-secondary)] backdrop-blur-sm"
                             >
                               {genre}
                             </span>

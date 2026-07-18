@@ -1,4 +1,4 @@
-import type { AniListMedia } from "@/entities/anime/api/anilist";
+import type { CatalogMedia } from "@/entities/anime/api/catalog";
 import type { HomeAnimeItem, WatchAnimeItem } from "@/entities/anime/model/types";
 import {
   cleanDescription,
@@ -6,7 +6,7 @@ import {
   titleCase,
   trimText
 } from "@/entities/anime/lib/formatters";
-import { makePosterPlaceholder } from "@/entities/anime/lib/placeholders";
+import { toAnimeSlug } from "@/entities/anime/lib/slug";
 
 const ACCENT_PALETTE = [
   "#8d72ff",
@@ -17,22 +17,25 @@ const ACCENT_PALETTE = [
   "#ffd86e"
 ];
 
-function getAccent(media: AniListMedia, index: number) {
+function getAccent(media: CatalogMedia, index: number) {
   return media.coverImage?.color ?? ACCENT_PALETTE[index % ACCENT_PALETTE.length];
 }
 
-function getCoverImage(media: AniListMedia, title: string, accent: string) {
-  // Use generated artwork when AniList does not provide a usable cover image.
-  return (
+function getCoverImage(media: CatalogMedia, title: string, accent: string) {
+  const coverImage =
     media.coverImage?.extraLarge ??
     media.coverImage?.large ??
-    media.coverImage?.medium ??
-    makePosterPlaceholder(title, accent)
-  );
+    media.coverImage?.medium;
+
+  if (!coverImage) {
+    throw new Error(`Missing catalog artwork for ${title} (${accent})`);
+  }
+
+  return coverImage;
 }
 
-export function getEpisodeCount(media: Pick<AniListMedia, "episodes" | "nextAiringEpisode">) {
-  // For releasing shows, AniList often omits the final episode total but exposes the next airing episode.
+export function getEpisodeCount(media: Pick<CatalogMedia, "episodes" | "nextAiringEpisode">) {
+  // Releasing shows may expose the next episode before a final episode total is available.
   const currentEpisodeCount =
     media.nextAiringEpisode?.episode && media.nextAiringEpisode.episode > 1
       ? media.nextAiringEpisode.episode - 1
@@ -41,7 +44,7 @@ export function getEpisodeCount(media: Pick<AniListMedia, "episodes" | "nextAiri
   return media.episodes ?? currentEpisodeCount ?? 1;
 }
 
-function getSeasonLabel(media: Pick<AniListMedia, "season" | "seasonYear">) {
+function getSeasonLabel(media: Pick<CatalogMedia, "season" | "seasonYear">) {
   return media.season
     ? `${titleCase(media.season)} ${media.seasonYear ?? ""}`.trim()
     : media.seasonYear
@@ -49,17 +52,25 @@ function getSeasonLabel(media: Pick<AniListMedia, "season" | "seasonYear">) {
       : "Catalog Pick";
 }
 
-function getStatusLabel(status: AniListMedia["status"]) {
+function getStatusLabel(status: CatalogMedia["status"]) {
   return status ? titleCase(status) : "Unknown";
 }
 
-function getStudioLabel(studios: AniListMedia["studios"]) {
+function getStudioLabel(studios: CatalogMedia["studios"]) {
   const mainStudio = studios?.nodes.find((studio) => studio.name)?.name;
   return mainStudio ?? "Unknown";
 }
 
-export function mapAniListMediaToHomeItem(
-  media: AniListMedia,
+function getLibraryId(media: CatalogMedia) {
+  return media.libraryId || `${media.id}`;
+}
+
+function getUrlSlug(media: CatalogMedia, title: string) {
+  return media.urlSlug || media.libraryId || toAnimeSlug(title);
+}
+
+export function mapCatalogMediaToHomeItem(
+  media: CatalogMedia,
   index: number
 ): HomeAnimeItem {
   const title = pickTitle(media.title);
@@ -76,12 +87,12 @@ export function mapAniListMediaToHomeItem(
   ]
     .filter((value): value is string => Boolean(value))
     .filter((value, itemIndex, list) => list.indexOf(value) === itemIndex && value !== title);
-  // AniList does not include sub/dub availability in this feed, so use a stable demo split for filters.
-  const hasDub = media.format === "MOVIE" || index % 3 !== 1;
   const episodeCount = getEpisodeCount(media);
 
   return {
     id: media.id,
+    libraryId: getLibraryId(media),
+    urlSlug: getUrlSlug(media, title),
     title,
     alternateTitles,
     subtitle: `${formatLabel} • ${seasonLabel}`,
@@ -93,15 +104,15 @@ export function mapAniListMediaToHomeItem(
     formatLabel,
     seasonLabel,
     genres: media.genres.filter(Boolean) as string[],
-    hasSub: true,
-    hasDub,
     accent,
-    popularity: media.popularity ?? 0
+    popularity: media.popularity ?? 0,
+    isNsfw: media.isNsfw,
+    isFeatured: media.isFeatured
   };
 }
 
-export function mapAniListMediaToWatchItem(
-  media: AniListMedia,
+export function mapCatalogMediaToWatchItem(
+  media: CatalogMedia,
   index: number
 ): WatchAnimeItem {
   const title = pickTitle(media.title);
@@ -110,6 +121,8 @@ export function mapAniListMediaToWatchItem(
 
   return {
     id: media.id,
+    libraryId: getLibraryId(media),
+    urlSlug: getUrlSlug(media, title),
     title,
     description: trimText(cleanDescription(media.description), 520),
     coverImage: getCoverImage(media, title, accent),
@@ -122,6 +135,8 @@ export function mapAniListMediaToWatchItem(
     genres: media.genres.filter(Boolean) as string[],
     accent,
     episodeCount,
-    episodesLabel: `${episodeCount}`
+    episodeNumbers: Array.from({ length: episodeCount }, (_, episodeIndex) => episodeIndex + 1),
+    episodesLabel: `${episodeCount}`,
+    isNsfw: media.isNsfw
   };
 }

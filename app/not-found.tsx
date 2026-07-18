@@ -12,7 +12,7 @@ export default function NotFound() {
             This anime page does not exist.
           </h1>
           <p className="mx-auto mt-3 max-w-[38rem] text-sm leading-7 text-[var(--text-secondary)]">
-            The title you opened could not be matched to a live anime entry right now.
+            The title you opened could not be found in the RioAnime library.
           </p>
           <Link
             href="/"

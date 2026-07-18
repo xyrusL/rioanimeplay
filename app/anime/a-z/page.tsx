@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { toAnimeSlug } from "@/entities/anime/lib/slug";
 import { getAlphabeticalAnimeGroups } from "@/features/browse/model/browse-page-data";
 import { SiteFooter } from "@/features/home/sections/site-footer";
 import { SiteHeader } from "@/features/home/sections/site-header";
@@ -12,6 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AnimeAlphabeticalPage() {
   const groups = await getAlphabeticalAnimeGroups();
+  const totalTitles = groups.reduce((total, group) => total + group.items.length, 0);
 
   return (
     <main className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
@@ -29,8 +29,8 @@ export default async function AnimeAlphabeticalPage() {
                   Browse Anime From A To Z
                 </h1>
                 <p className="max-w-3xl text-sm leading-6 text-[var(--text-secondary)]">
-                  Open any title to jump straight into its watch page. The list is grouped
-                  alphabetically so users can scan fast instead of hunting through trending rows.
+                  {totalTitles} titles loaded directly from the RioAnime database, grouped
+                  alphabetically for fast browsing.
                 </p>
               </div>
 
@@ -64,7 +64,7 @@ export default async function AnimeAlphabeticalPage() {
                 No Anime Available
               </p>
               <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                AniList did not return any titles right now.
+                The library does not contain any available titles right now.
               </p>
             </div>
           ) : (
@@ -88,8 +88,8 @@ export default async function AnimeAlphabeticalPage() {
                   <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                     {group.items.map((item) => (
                       <Link
-                        key={item.id}
-                        href={`/watch/${toAnimeSlug(item.title)}`}
+                        key={item.libraryId}
+                        href={`/watch/${encodeURIComponent(item.urlSlug)}`}
                         className="group flex cursor-pointer items-center gap-4 rounded-[24px] border border-[var(--line-soft)] bg-[rgba(255,255,255,0.03)] p-3 transition-[border-color,transform,background-color] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:-translate-y-0.5 hover:border-[var(--line-strong)] hover:bg-[rgba(255,255,255,0.045)]"
                       >
                         <div className="relative h-[96px] w-[72px] shrink-0 overflow-hidden rounded-[18px] border border-[rgba(255,255,255,0.08)]">

@@ -61,7 +61,7 @@ export function MobileRecentUpdatesSection({
       <div className="grid grid-cols-2 gap-4 pb-4">
         {visibleItems.map((item) => (
           <div key={item.id} className="min-w-0">
-            <MobilePosterCard className="w-full" item={item} />
+            <MobilePosterCard compact className="w-full" item={item} />
           </div>
         ))}
       </div>

@@ -7,17 +7,22 @@ type ResponsiveRenderProps = {
   initialIsMobile: boolean;
   mobile: React.ReactNode;
   desktop: React.ReactNode;
+  mobileViewportFallback?: boolean;
 };
 
 export function ResponsiveRender({
   initialIsMobile,
   mobile,
-  desktop
+  desktop,
+  mobileViewportFallback = false
 }: ResponsiveRenderProps) {
   const [isMobile, setIsMobile] = useState(initialIsMobile);
 
   useEffect(() => {
-    const updateMatch = () => setIsMobile(isLikelyMobileClient());
+    const updateMatch = () => {
+      const matchesMobileViewport = mobileViewportFallback && window.innerWidth <= 440;
+      setIsMobile(isLikelyMobileClient() || matchesMobileViewport);
+    };
 
     updateMatch();
     window.addEventListener("resize", updateMatch);
@@ -27,7 +32,7 @@ export function ResponsiveRender({
       window.removeEventListener("resize", updateMatch);
       window.removeEventListener("orientationchange", updateMatch);
     };
-  }, []);
+  }, [mobileViewportFallback]);
 
   return isMobile ? mobile : desktop;
 }

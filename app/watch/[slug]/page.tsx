@@ -8,6 +8,7 @@ import { MobileWatchUnavailableScreen } from "@/features/watch/sections/mobile-w
 import { WatchScreen } from "@/features/watch/sections/watch-screen";
 import { WatchUnavailableScreen } from "@/features/watch/sections/watch-unavailable-screen";
 import { isLikelyMobileUserAgent } from "@/shared/lib/mobile-detection";
+import { ScheduledAnnouncementModal } from "@/shared/ui/scheduled-announcement-modal";
 
 type WatchPageProps = {
   params: Promise<{
@@ -18,7 +19,13 @@ type WatchPageProps = {
 export default async function WatchPage({ params }: WatchPageProps) {
   const headerStore = await headers();
   const initialIsMobile = isLikelyMobileUserAgent(headerStore.get("user-agent") ?? "");
-  const { slug } = await params;
+  const { slug: routeSlug } = await params;
+  let slug: string;
+  try {
+    slug = decodeURIComponent(routeSlug);
+  } catch {
+    notFound();
+  }
   const result = await getWatchPageData(slug);
 
   if (result.status === "not-found") {
@@ -36,10 +43,10 @@ export default async function WatchPage({ params }: WatchPageProps) {
   }
 
   return (
-    <ResponsiveRender
+    <><ResponsiveRender
       initialIsMobile={initialIsMobile}
       mobile={<MobileWatchScreen anime={result.anime} />}
       desktop={<WatchScreen anime={result.anime} />}
-    />
+    /><ScheduledAnnouncementModal placement="post_modal" animeId={result.anime.libraryId} /></>
   );
 }

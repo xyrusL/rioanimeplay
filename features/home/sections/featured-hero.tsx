@@ -1,14 +1,13 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 
-import { toAnimeSlug } from "@/entities/anime/lib/slug";
 import type { HomeAnimeItem } from "@/entities/anime/model/types";
 import { MaterialIcon } from "@/shared/ui/icons/material-icon";
+import { SensitiveImage } from "@/shared/ui/sensitive-image";
 
 type FeaturedHeroProps = {
   featured: HomeAnimeItem[];
@@ -60,8 +59,7 @@ export function FeaturedHero({ featured }: FeaturedHeroProps) {
               No Featured Anime
             </p>
             <p className="max-w-xl text-sm leading-6 text-[var(--text-secondary)]">
-              AniList did not return featured anime right now. Live content will appear here when
-              data is available.
+              Featured titles will appear here when the library contains available content.
             </p>
           </div>
         </div>
@@ -106,13 +104,13 @@ export function FeaturedHero({ featured }: FeaturedHeroProps) {
       <div className="overflow-hidden" ref={emblaRef}>
         <div className="flex">
           {featured.map((item, index) => {
-            const watchHref = `/watch/${toAnimeSlug(item.title)}`;
+            const watchHref = `/watch/${encodeURIComponent(item.urlSlug)}`;
 
             return (
               <article key={item.id} className="min-w-0 shrink-0 grow-0 basis-full">
               <div className="relative h-[390px] overflow-hidden lg:h-[450px]">
                 <div className="absolute inset-0">
-                  <Image
+                  <SensitiveImage isNsfw={item.isNsfw}
                     fill
                     priority
                     alt={item.title}
@@ -151,7 +149,7 @@ export function FeaturedHero({ featured }: FeaturedHeroProps) {
                       >
                         {index + 1}
                       </span>
-                      <Image
+                      <SensitiveImage isNsfw={item.isNsfw}
                         fill
                         alt={item.title}
                         className="object-cover transition-transform duration-[var(--motion-slow)] ease-[var(--ease-soft)] group-hover/poster:scale-[1.04]"

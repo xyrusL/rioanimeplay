@@ -1,18 +1,19 @@
 import Fuse from "fuse.js";
 
 import {
-  fetchTrendingAnimePage,
-  fetchTrendingMoviePage,
+  fetchBrowseCatalog,
+  fetchBrowseCatalogFresh,
   searchAnimeByTitle,
-  type AniListMedia
-} from "@/entities/anime/api/anilist";
+  type CatalogMedia
+} from "@/entities/anime/api/catalog";
 import { formatDecimalScore, pickTitle, titleCase } from "@/entities/anime/lib/formatters";
 import { getEpisodeCount } from "@/entities/anime/lib/mappers";
-import { toAnimeSlug } from "@/entities/anime/lib/slug";
 import { filterPrivateAnimeItems, getSiteSettings } from "@/shared/lib/site-settings";
 
-type SearchAnimeItem = {
+export type SearchAnimeItem = {
   id: number;
+  libraryId: string;
+  urlSlug: string;
   title: string;
   alternateTitles: string[];
   coverImage: string;
@@ -35,7 +36,7 @@ let cachedCatalog: SearchAnimeItem[] | null = null;
 let cachedAt = 0;
 let catalogPromise: Promise<SearchAnimeItem[]> | null = null;
 
-function mapMediaToSearchItem(media: AniListMedia): SearchAnimeItem | null {
+function mapMediaToSearchItem(media: CatalogMedia): SearchAnimeItem | null {
   const title = pickTitle(media.title);
   const coverImage =
     media.coverImage?.large ?? media.coverImage?.medium ?? media.coverImage?.extraLarge;
@@ -55,6 +56,8 @@ function mapMediaToSearchItem(media: AniListMedia): SearchAnimeItem | null {
 
   return {
     id: media.id,
+    libraryId: media.libraryId,
+    urlSlug: media.urlSlug,
     title,
     alternateTitles,
     coverImage,
@@ -62,11 +65,11 @@ function mapMediaToSearchItem(media: AniListMedia): SearchAnimeItem | null {
     yearLabel: media.seasonYear ? `${media.seasonYear}` : "TBA",
     episodesLabel: `${getEpisodeCount(media)}`,
     scoreLabel: formatDecimalScore(media.averageScore ?? media.meanScore ?? null),
-    href: `/watch/${toAnimeSlug(title)}`
+    href: `/watch/${encodeURIComponent(media.urlSlug)}`
   };
 }
 
-function mergeUniqueMedia(...collections: AniListMedia[][]) {
+function mergeUniqueMedia(...collections: CatalogMedia[][]) {
   const seen = new Set<number>();
 
   return collections.flat().filter((item) => {
@@ -87,14 +90,9 @@ async function getCatalog(): Promise<SearchAnimeItem[]> {
   }
 
   if (!catalogPromise) {
-    catalogPromise = Promise.all([
-      fetchTrendingAnimePage(1, 50),
-      fetchTrendingAnimePage(2, 50),
-      fetchTrendingAnimePage(3, 50),
-      fetchTrendingMoviePage(1, 50)
-    ])
-      .then(([pageOne, pageTwo, pageThree, movies]) => {
-        cachedCatalog = mergeUniqueMedia(pageOne, pageTwo, pageThree, movies)
+    catalogPromise = fetchBrowseCatalog()
+      .then(({ anime, movies }) => {
+        cachedCatalog = mergeUniqueMedia(anime, movies)
           .map(mapMediaToSearchItem)
           .filter((item): item is SearchAnimeItem => Boolean(item));
         cachedAt = Date.now();
@@ -107,6 +105,17 @@ async function getCatalog(): Promise<SearchAnimeItem[]> {
   }
 
   return catalogPromise;
+}
+
+export async function getAnimeSearchCatalog() {
+  const [{ anime, movies }, siteSettings] = await Promise.all([
+    fetchBrowseCatalogFresh(),
+    getSiteSettings()
+  ]);
+  const catalog = mergeUniqueMedia(anime, movies)
+    .map(mapMediaToSearchItem)
+    .filter((item): item is SearchAnimeItem => Boolean(item));
+  return filterPrivateAnimeItems(catalog, siteSettings);
 }
 
 function getCachedCatalogSnapshot() {

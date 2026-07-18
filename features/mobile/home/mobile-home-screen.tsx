@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence } from "motion/react";
+import { AnnouncementStrip } from "@/features/home/sections/announcement-strip";
 import { MobileFeaturedCarousel } from "@/features/mobile/home/mobile-featured-carousel";
 import { MobileRecentUpdatesSection } from "@/features/mobile/home/mobile-recent-updates-section";
 import { MobileAppShell } from "@/features/mobile/shared/mobile-app-shell";
@@ -10,14 +10,23 @@ import {
 } from "@/features/mobile/shared/mobile-anime-card";
 import type { HomePageData } from "@/entities/anime/model/types";
 import { SearchAutocomplete } from "@/features/search/sections/search-autocomplete";
-import { AnimatedModal } from "@/shared/ui/animated-modal";
 import type { SiteSettings } from "@/shared/lib/site-settings";
+import {
+  getRecentWatchAnimeIds,
+  LIBRARY_CHANGE_EVENT
+} from "@/shared/lib/watch-storage";
 import { MaterialIcon } from "@/shared/ui/icons/material-icon";
+import { ProfileAvatar } from "@/shared/ui/profile-avatar";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type MobileHomeScreenProps = {
   homePageData: HomePageData;
+  member: {
+    name: string;
+    email: string;
+    image: string | null;
+  } | null;
   siteSettings: SiteSettings;
 };
 
@@ -59,98 +68,56 @@ function SectionHeading({
   );
 }
 
-function MobileAnnouncementSheet({
-  message,
-  onClose,
-  title
-}: {
-  message: string;
-  onClose: () => void;
-  title: string;
-}) {
-  return (
-    <AnimatedModal
-      isOpen
-      onClose={onClose}
-      labelledBy="mobile-announcement-title"
-      placement="bottom"
-      backdropClassName="z-[420] bg-[var(--mobile-sheet-overlay)] px-3 pt-10 pb-[max(1rem,calc(env(safe-area-inset-bottom)+0.75rem))] backdrop-blur-[3px] sm:px-4"
-      panelClassName="relative mx-auto max-h-[min(70vh,560px)] w-full max-w-[420px] overflow-hidden rounded-[30px] border border-[var(--line-strong)] bg-[var(--mobile-sheet-surface)] shadow-[var(--mobile-sheet-shadow)]"
-    >
-      <>
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-[radial-gradient(circle_at_bottom,var(--accent-soft),transparent_72%)] opacity-80" />
-          <div className="relative border-b border-[var(--line-soft)] bg-[linear-gradient(90deg,var(--accent-soft),transparent_56%)] px-5 py-4">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0 space-y-2">
-                <p className="inline-flex items-center gap-2 rounded-full border border-[var(--line-soft)] bg-[var(--bg-card-muted)] px-3 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-[var(--accent-strong)]">
-                  <MaterialIcon className="text-[16px]" name="campaign" />
-                  Announcement
-                </p>
-                <h2
-                  id="mobile-announcement-title"
-                  className="font-display text-[1.2rem] leading-6 text-[var(--text-primary)]"
-                >
-                  {title}
-                </h2>
-              </div>
-              <button
-                type="button"
-                aria-label="Dismiss announcement"
-                onClick={onClose}
-                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--line-soft)] bg-[var(--bg-card-muted)] text-[var(--text-secondary)] transition-[border-color,color,transform] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:-translate-y-0.5 hover:border-[var(--line-strong)] hover:text-[var(--text-primary)]"
-              >
-                <MaterialIcon className="text-[18px]" name="close" />
-              </button>
-            </div>
-          </div>
-
-          <div className="relative max-h-[calc(min(70vh,560px)-88px)] space-y-4 overflow-y-auto px-5 py-5">
-            <p className="text-sm leading-7 text-[var(--text-secondary)]">{message}</p>
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[var(--line-strong)] bg-[linear-gradient(135deg,var(--accent-soft),rgba(0,0,0,0))] px-4 py-3 text-sm font-semibold text-[var(--text-primary)] shadow-[var(--cta-shadow)] transition-[transform,border-color,background-color] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:-translate-y-0.5"
-            >
-              <MaterialIcon className="text-[18px] text-[var(--accent-strong)]" name="done" />
-              Close notice
-            </button>
-          </div>
-      </>
-    </AnimatedModal>
-  );
-}
-
 export function MobileHomeScreen({
   homePageData,
-  siteSettings
+  member
 }: MobileHomeScreenProps) {
+  const [recentWatchIds, setRecentWatchIds] = useState<number[]>([]);
   const trendingItems = homePageData.grid.slice(0, 8);
   const recentUpdateItems = homePageData.grid.slice(8);
-  const [isAnnouncementOpen, setIsAnnouncementOpen] = useState(false);
+  const catalog = useMemo(
+    () => [...homePageData.featured, ...homePageData.grid],
+    [homePageData.featured, homePageData.grid]
+  );
+  const recentWatchItems = useMemo(() => {
+    const itemMap = new Map(catalog.map((item) => [item.id, item]));
+    return recentWatchIds
+      .map((animeId) => itemMap.get(animeId))
+      .filter((item): item is (typeof catalog)[number] => Boolean(item));
+  }, [catalog, recentWatchIds]);
+  const showRecentWatch = Boolean(member) && recentWatchItems.length >= 3;
+  const shelfItems = showRecentWatch ? recentWatchItems : trendingItems;
+
+  useEffect(() => {
+    function refreshRecentWatch() {
+      setRecentWatchIds(getRecentWatchAnimeIds());
+    }
+
+    refreshRecentWatch();
+    window.addEventListener(LIBRARY_CHANGE_EVENT, refreshRecentWatch);
+    return () => window.removeEventListener(LIBRARY_CHANGE_EVENT, refreshRecentWatch);
+  }, []);
 
   return (
-    <MobileAppShell hideBottomNav={isAnnouncementOpen}>
+    <MobileAppShell>
       <div className="space-y-6">
         <header className="space-y-4 rounded-[34px] border border-[var(--line-soft)] bg-[var(--panel-surface)] p-4 shadow-[var(--panel-shadow)]">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--accent-strong),var(--accent))] text-lg font-semibold text-[var(--bg-base)] shadow-[0_14px_28px_var(--accent-soft)]">
-                G
-              </div>
+              <ProfileAvatar
+                className="h-14 w-14 rounded-full bg-[linear-gradient(135deg,var(--accent-strong),var(--accent))] text-lg font-semibold text-[var(--bg-base)] shadow-[0_14px_28px_var(--accent-soft)]"
+                image={member?.image}
+                imageSizes="56px"
+                name={member?.name ?? "Guest"}
+              />
               <div>
                 <p className="text-sm text-[var(--text-secondary)]">Welcome back</p>
-                <h1 className="text-xl font-semibold text-[var(--text-primary)]">Guest</h1>
+                <h1 className="text-xl font-semibold text-[var(--text-primary)]">
+                  {member?.name.split(" ")[0] || "Guest"}
+                </h1>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                aria-label="Notifications"
-                onClick={() => setIsAnnouncementOpen(true)}
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--line-soft)] bg-[var(--bg-card)] text-[var(--text-primary)] backdrop-blur-sm transition-[border-color,transform,background-color] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:-translate-y-0.5 hover:border-[var(--line-strong)]"
-              >
-                <MaterialIcon className="text-[20px]" name="notifications" />
-              </button>
               <Link
                 href="/filter"
                 aria-label="Open filters"
@@ -165,17 +132,18 @@ export function MobileHomeScreen({
         </header>
 
         <MobileFeaturedCarousel featured={homePageData.featured} />
+        <AnnouncementStrip />
 
         <section className="space-y-4">
           <SectionHeading
-            actionHref="/filter"
+            actionHref={showRecentWatch ? "/filter?view=recent-watch" : "/filter"}
             actionLabel="See all"
             eyebrow="For you"
-            title="Latest Update"
+            title={showRecentWatch ? "Recent Watch" : "Latest Update"}
           />
           <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {trendingItems.map((item) => (
-              <MobilePosterCard key={item.id} item={item} />
+            {shelfItems.map((item) => (
+              <MobilePosterCard compact key={item.id} item={item} />
             ))}
           </div>
         </section>
@@ -191,15 +159,6 @@ export function MobileHomeScreen({
 
         <MobileRecentUpdatesSection items={recentUpdateItems} />
 
-        <AnimatePresence>
-        {isAnnouncementOpen ? (
-          <MobileAnnouncementSheet
-            message={siteSettings.announcement.message}
-            onClose={() => setIsAnnouncementOpen(false)}
-            title={siteSettings.announcement.title}
-          />
-        ) : null}
-        </AnimatePresence>
       </div>
     </MobileAppShell>
   );

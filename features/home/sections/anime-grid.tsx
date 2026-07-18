@@ -3,18 +3,18 @@
 import { useEffect, useMemo, useState } from "react";
 
 import type { HomeAnimeItem } from "@/entities/anime/model/types";
-import { getBookmarkedAnimeIds } from "@/shared/lib/watch-storage";
+import { getBookmarkedAnimeIds, LIBRARY_CHANGE_EVENT } from "@/shared/lib/watch-storage";
 import { MaterialIcon } from "@/shared/ui/icons/material-icon";
 import { Panel } from "@/shared/ui/panel";
 
 import { AnimeCard } from "@/features/home/sections/anime-card";
 
 const CONTENT_TABS = [
-  { id: "recent", label: "Recent", icon: "history" },
+  { id: "all", label: "All", icon: "apps" },
   { id: "sub", label: "Sub", icon: "subtitles" },
   { id: "dub", label: "Dub", icon: "mic" },
-  { id: "followed", label: "Followed", icon: "bookmark" },
-  { id: "movie", label: "Movie", icon: "movie" }
+  { id: "movie", label: "Movie", icon: "movie" },
+  { id: "followed", label: "Followed", icon: "bookmark" }
 ] as const;
 
 type ContentTabId = (typeof CONTENT_TABS)[number]["id"];
@@ -25,10 +25,10 @@ type AnimeGridProps = {
 };
 
 export function AnimeGrid({ items }: AnimeGridProps) {
-  const [activeTab, setActiveTab] = useState<ContentTabId>("recent");
+  const [activeTab, setActiveTab] = useState<ContentTabId>("all");
   const [bookmarkedIds, setBookmarkedIds] = useState<number[]>([]);
   const [pageByTab, setPageByTab] = useState<Record<ContentTabId, number>>({
-    recent: 0,
+    all: 0,
     sub: 0,
     dub: 0,
     followed: 0,
@@ -36,31 +36,44 @@ export function AnimeGrid({ items }: AnimeGridProps) {
   });
 
   useEffect(() => {
-    setBookmarkedIds(getBookmarkedAnimeIds());
+    function refreshBookmarks() {
+      setBookmarkedIds(getBookmarkedAnimeIds());
+    }
+
+    refreshBookmarks();
 
     function handleStorage(event: StorageEvent) {
       if (event.key && event.key !== "rioanime:bookmarks") {
         return;
       }
 
-      setBookmarkedIds(getBookmarkedAnimeIds());
+      refreshBookmarks();
     }
 
     window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+    window.addEventListener(LIBRARY_CHANGE_EVENT, refreshBookmarks);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener(LIBRARY_CHANGE_EVENT, refreshBookmarks);
+    };
   }, []);
 
   const filteredItems = useMemo(() => {
+    const isExplicitDub = (item: HomeAnimeItem) =>
+      /(?:^|[-_(\s])(dub|tagalog)(?:$|[-_)\s])/i.test(
+        `${item.libraryId} ${item.title} ${item.alternateTitles.join(" ")}`
+      );
+
     switch (activeTab) {
       case "sub":
-        return items.filter((item) => item.hasSub);
+        return items.filter((item) => !isExplicitDub(item));
       case "dub":
-        return items.filter((item) => item.hasDub);
+        return items.filter(isExplicitDub);
       case "movie":
         return items.filter((item) => item.formatLabel === "Movie");
       case "followed":
         return items.filter((item) => bookmarkedIds.includes(item.id));
-      case "recent":
+      case "all":
       default:
         return items;
     }
@@ -91,7 +104,7 @@ export function AnimeGrid({ items }: AnimeGridProps) {
   }
 
   return (
-    <Panel actionLabel="Demo Feed" icon="movie_filter" title="Browse Library">
+    <Panel actionLabel="Database Library" icon="movie_filter" title="Browse Library">
       <div className="border-b border-[var(--line-soft)] px-4 py-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-2">
@@ -153,14 +166,14 @@ export function AnimeGrid({ items }: AnimeGridProps) {
             <p className="max-w-md text-sm leading-6 text-[var(--text-secondary)]">
               {activeTab === "followed"
                 ? "Bookmarked anime will appear here once you save them from the watch page."
-                : "AniList did not return live anime for this tab right now."}
+                : "No titles match this library view."}
             </p>
           </div>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {pagedItems.map((item) => (
-            <AnimeCard key={item.id} item={item} />
+            <AnimeCard key={item.libraryId} item={item} />
           ))}
         </div>
       )}

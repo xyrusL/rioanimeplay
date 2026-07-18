@@ -7,20 +7,13 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { buildFilterHref, FILTER_ALL_YEARS } from "@/features/browse/model/filter-utils";
+import {
+  loadBrowserSearchIndex,
+  rankBrowserSearchItems,
+  type BrowserSearchItem
+} from "@/features/search/model/browser-anime-search";
 import { MOTION_VARIANTS } from "@/shared/lib/motion";
 import { MaterialIcon } from "@/shared/ui/icons/material-icon";
-
-type SearchResult = {
-  id: number;
-  title: string;
-  alternateTitles: string[];
-  coverImage: string;
-  formatLabel: string;
-  yearLabel: string;
-  episodesLabel: string;
-  scoreLabel: string;
-  href: string;
-};
 
 type SearchAutocompleteProps = {
   className?: string;
@@ -29,14 +22,14 @@ type SearchAutocompleteProps = {
 export function SearchAutocomplete({ className }: SearchAutocompleteProps) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const activeRequestRef = useRef<AbortController | null>(null);
+  const indexPromiseRef = useRef<Promise<BrowserSearchItem[]> | null>(null);
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [index, setIndex] = useState<BrowserSearchItem[] | null>(null);
+  const [results, setResults] = useState<BrowserSearchItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   function clearSearch() {
-    activeRequestRef.current?.abort();
     setQuery("");
     setResults([]);
     setIsLoading(false);
@@ -48,6 +41,19 @@ export function SearchAutocomplete({ className }: SearchAutocompleteProps) {
       query,
       year: FILTER_ALL_YEARS
     });
+  }
+
+  function ensureIndex() {
+    if (index || indexPromiseRef.current) return;
+    indexPromiseRef.current = loadBrowserSearchIndex()
+      .then(({ data }) => {
+        setIndex(data);
+        return data;
+      })
+      .catch(() => {
+        setIndex([]);
+        return [];
+      });
   }
 
   useEffect(() => {
@@ -63,7 +69,6 @@ export function SearchAutocomplete({ className }: SearchAutocompleteProps) {
 
   useEffect(() => {
     const trimmedQuery = query.trim();
-    activeRequestRef.current?.abort();
 
     if (trimmedQuery.length < 1) {
       setResults([]);
@@ -71,37 +76,15 @@ export function SearchAutocomplete({ className }: SearchAutocompleteProps) {
       return;
     }
 
-    setIsLoading(true);
-    const controller = new AbortController();
-    activeRequestRef.current = controller;
-    const timeoutId = window.setTimeout(async () => {
-      try {
-        const response = await fetch(`/api/search?q=${encodeURIComponent(trimmedQuery)}`, {
-          signal: controller.signal
-        });
-        const payload = (await response.json()) as { results: SearchResult[] };
-        if (controller.signal.aborted) {
-          return;
-        }
-        setResults(payload.results);
-        setIsOpen(true);
-      } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") {
-          return;
-        }
-        setResults([]);
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsLoading(false);
-        }
-      }
-    }, 90);
+    if (!index) {
+      setIsLoading(true);
+      return;
+    }
 
-    return () => {
-      window.clearTimeout(timeoutId);
-      controller.abort();
-    };
-  }, [query]);
+    setResults(rankBrowserSearchItems(index, trimmedQuery));
+    setIsLoading(false);
+    setIsOpen(true);
+  }, [index, query]);
 
   return (
     <div ref={containerRef} className={`relative min-w-0 ${className ?? ""}`}>
@@ -115,8 +98,10 @@ export function SearchAutocomplete({ className }: SearchAutocompleteProps) {
         onChange={(event) => {
           setQuery(event.target.value);
           setIsOpen(true);
+          if (event.target.value.trim()) ensureIndex();
         }}
         onFocus={() => {
+          ensureIndex();
           if (results.length > 0) {
             setIsOpen(true);
           }

@@ -34,7 +34,7 @@ export function IntroArticle({ featured }: IntroArticleProps) {
           </h2>
           <p className="text-[1.05rem] leading-8 text-[var(--text-secondary)] sm:text-[1.12rem]">
             This introduction page gives you a clear look at what RioAnimePlay can do right now.
-            The catalog is powered by live AniList data, the layout stays easy to read, and the
+            The catalog is powered by the RioAnime database, the layout stays easy to read, and the
             focus stays on helping you move from curiosity to an actual title without getting lost
             in extra homepage widgets.
           </p>
@@ -82,10 +82,9 @@ export function IntroArticle({ featured }: IntroArticleProps) {
               4 / What about accounts, bookmarks, and the overall design?
             </h3>
             <p className="text-[1rem] leading-8 text-[var(--text-secondary)]">
-              Bookmarks already work as a front-end convenience, which makes it easy to keep a
-              short list of titles you want to revisit. Login and register screens are present as
-              part of the current UI flow, but they are still a presentation layer rather than a
-              fully connected account system. The design side is already theme-aware, so appearance
+              Bookmarks make it easy to keep a short list of titles you want to revisit. Member
+              access now uses Google sign-in, so there is no separate registration form, password,
+              or email verification code to manage. The design remains theme-aware, so appearance
               presets can change the overall look without rebuilding the layout.
             </p>
           </section>
@@ -96,7 +95,7 @@ export function IntroArticle({ featured }: IntroArticleProps) {
             Top search
           </p>
           <p className="mt-2 text-[1rem] leading-8 text-[var(--text-secondary)]">
-            Right now, some of the titles people can jump into from this page include {featuredLine || "live catalog entries from AniList"}.
+            Right now, some of the titles people can jump into from this page include {featuredLine || "titles from the RioAnime library"}.
           </p>
         </div>
 

@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { SearchAutocomplete } from "@/features/search/sections/search-autocomplete";
-import { toAnimeSlug } from "@/entities/anime/lib/slug";
 import type { HomePageData } from "@/entities/anime/model/types";
 
 type HomeShowcaseProps = {
@@ -75,7 +74,7 @@ export function HomeShowcase({ homePageData }: HomeShowcaseProps) {
                 {topLinks.map((item, index) => (
                   <span key={item.id}>
                     <Link
-                      href={`/watch/${toAnimeSlug(item.title)}`}
+                      href={`/watch/${encodeURIComponent(item.urlSlug)}`}
                       className="transition-colors duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:text-[var(--text-primary)]"
                     >
                       {item.title}

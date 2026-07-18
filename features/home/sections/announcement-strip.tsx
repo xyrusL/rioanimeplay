@@ -1,20 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { loadCachedAnnouncements, type PublicAnnouncement } from "@/shared/lib/cached-announcements";
 import { AnimatedModal } from "@/shared/ui/animated-modal";
 import { MaterialIcon } from "@/shared/ui/icons/material-icon";
 
-type AnnouncementStripProps = {
-  title: string;
-  message: string;
-};
-
-export function AnnouncementStrip({
-  title,
-  message
-}: AnnouncementStripProps) {
+export function AnnouncementStrip() {
   const [isOpen, setIsOpen] = useState(false);
+  const [announcement, setAnnouncement] = useState<PublicAnnouncement | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const params = new URLSearchParams({ placement: "home_inline" });
+    void loadCachedAnnouncements(params)
+      .then(({ data }) => { if (active) setAnnouncement(data[0] ?? null); })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, []);
+
+  if (!announcement) return null;
+  const { title, message } = announcement;
 
   return (
     <>
@@ -46,31 +52,25 @@ export function AnnouncementStrip({
         backdropClassName="bg-[var(--modal-overlay)] px-4 backdrop-blur-sm"
         panelClassName="w-full max-w-[680px] rounded-[30px] border border-[var(--line-strong)] bg-[var(--modal-surface)] p-6 shadow-[var(--modal-shadow)]"
       >
-        <>
-          <div
-            className="w-full"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-2">
-                <p className="flex items-center gap-2 font-display text-[0.86rem] uppercase tracking-[0.22em] text-[var(--accent-strong)]">
-                  <MaterialIcon className="text-[18px]" name="campaign" />
-                  {title}
-                </p>
-                <p className="text-sm leading-7 text-[var(--text-secondary)] sm:text-[0.98rem]">
-                  {message}
-                </p>
-              </div>
-              <button
-                type="button"
-                aria-label="Close announcement details"
-                onClick={() => setIsOpen(false)}
-                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--line-soft)] bg-[rgba(255,255,255,0.03)] text-[var(--text-secondary)] transition-[border-color,color,transform] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:-translate-y-0.5 hover:border-[var(--line-strong)] hover:text-[var(--text-primary)]"
-              >
-                <MaterialIcon className="text-[18px]" name="close" />
-              </button>
-            </div>
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-2">
+            <p className="flex items-center gap-2 font-display text-[0.86rem] uppercase tracking-[0.22em] text-[var(--accent-strong)]">
+              <MaterialIcon className="text-[18px]" name="campaign" />
+              {title}
+            </p>
+            <p className="text-sm leading-7 text-[var(--text-secondary)] sm:text-[0.98rem]">
+              {message}
+            </p>
           </div>
-        </>
+          <button
+            type="button"
+            aria-label="Close announcement details"
+            onClick={() => setIsOpen(false)}
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--line-soft)] bg-[rgba(255,255,255,0.03)] text-[var(--text-secondary)] transition-[border-color,color,transform] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:-translate-y-0.5 hover:border-[var(--line-strong)] hover:text-[var(--text-primary)]"
+          >
+            <MaterialIcon className="text-[18px]" name="close" />
+          </button>
+        </div>
       </AnimatedModal>
     </>
   );

@@ -104,11 +104,11 @@ export function normalizeSeason(value: string | undefined) {
 }
 
 export function normalizeYear(value: string | undefined) {
-  if (value === FILTER_ALL_YEARS) {
+  if (!value?.trim() || value === FILTER_ALL_YEARS) {
     return FILTER_ALL_YEARS;
   }
 
-  return value && /^\d{4}$/.test(value) ? value : String(new Date().getFullYear());
+  return /^\d{4}$/.test(value) ? value : FILTER_ALL_YEARS;
 }
 
 export function normalizeType(value: string | undefined, availableTypes?: string[]) {
@@ -160,7 +160,9 @@ export function buildFilterHref(state: FilterRouteState) {
     params.set("type", state.type);
   }
 
-  params.set("year", state.year && state.year.trim() ? state.year : String(new Date().getFullYear()));
+  if (state.year && state.year !== FILTER_ALL_YEARS) {
+    params.set("year", state.year);
+  }
 
   if (state.season && state.season !== FILTER_DEFAULT_SEASON) {
     params.set("season", state.season);

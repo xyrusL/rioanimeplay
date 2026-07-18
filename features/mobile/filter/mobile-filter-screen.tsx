@@ -16,6 +16,10 @@ import {
 } from "@/features/browse/model/filter-utils";
 import { MobilePosterCard } from "@/features/mobile/shared/mobile-anime-card";
 import { MobileAppShell } from "@/features/mobile/shared/mobile-app-shell";
+import {
+  getRecentWatchAnimeIds,
+  LIBRARY_CHANGE_EVENT
+} from "@/shared/lib/watch-storage";
 import { MaterialIcon } from "@/shared/ui/icons/material-icon";
 import { AnimatedModal } from "@/shared/ui/animated-modal";
 
@@ -28,6 +32,8 @@ type MobileFilterScreenProps = {
   initialYear: string;
   initialGenres: string[];
   genres: string[];
+  recentWatchView: boolean;
+  signedIn: boolean;
   types: string[];
 };
 
@@ -84,6 +90,8 @@ export function MobileFilterScreen({
   initialYear,
   initialGenres,
   genres,
+  recentWatchView,
+  signedIn,
   types
 }: MobileFilterScreenProps) {
   const currentYear = String(new Date().getFullYear());
@@ -99,6 +107,7 @@ export function MobileFilterScreen({
   const [draftGenres, setDraftGenres] = useState<string[]>(initialGenres);
   const [genreQuery, setGenreQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(initialPage);
+  const [recentWatchIds, setRecentWatchIds] = useState<number[]>([]);
 
   useEffect(() => {
     setSearchValue(initialQuery);
@@ -111,6 +120,18 @@ export function MobileFilterScreen({
     setDraftYear(initialYear);
     setDraftGenres(initialGenres);
   }, [initialGenres, initialQuery, initialSeason, initialType, initialYear]);
+
+  useEffect(() => {
+    if (!recentWatchView || !signedIn) return;
+
+    function refreshRecentWatch() {
+      setRecentWatchIds(getRecentWatchAnimeIds());
+    }
+
+    refreshRecentWatch();
+    window.addEventListener(LIBRARY_CHANGE_EVENT, refreshRecentWatch);
+    return () => window.removeEventListener(LIBRARY_CHANGE_EVENT, refreshRecentWatch);
+  }, [recentWatchView, signedIn]);
 
   useEffect(() => {
     if (!isSheetOpen) {
@@ -163,24 +184,46 @@ export function MobileFilterScreen({
     []
   );
 
-  const filteredItems = useMemo(
-    () =>
-      sortFilteredItems(
-        filterCatalogItems(catalog, {
-          query: searchValue,
-          type: appliedType,
-          season: appliedSeason,
-          year: appliedYear,
-          genres: appliedGenres
-        }),
-        {
-          query: searchValue,
-          season: appliedSeason,
-          year: appliedYear
-        }
-      ),
-    [appliedGenres, appliedSeason, appliedType, appliedYear, catalog, searchValue]
-  );
+  const filteredItems = useMemo(() => {
+    if (recentWatchView && signedIn) {
+      const itemMap = new Map(catalog.map((item) => [item.id, item]));
+      const normalizedQuery = searchValue.trim().toLowerCase();
+
+      return recentWatchIds
+        .map((animeId) => itemMap.get(animeId))
+        .filter((item): item is HomeAnimeItem => Boolean(item))
+        .filter((item) =>
+          normalizedQuery
+            ? `${item.title} ${item.alternateTitles.join(" ")}`.toLowerCase().includes(normalizedQuery)
+            : true
+        );
+    }
+
+    return sortFilteredItems(
+      filterCatalogItems(catalog, {
+        query: searchValue,
+        type: appliedType,
+        season: appliedSeason,
+        year: appliedYear,
+        genres: appliedGenres
+      }),
+      {
+        query: searchValue,
+        season: appliedSeason,
+        year: appliedYear
+      }
+    );
+  }, [
+    appliedGenres,
+    appliedSeason,
+    appliedType,
+    appliedYear,
+    catalog,
+    recentWatchIds,
+    recentWatchView,
+    searchValue,
+    signedIn
+  ]);
 
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / MOBILE_FILTER_PAGE_SIZE));
 
@@ -215,6 +258,8 @@ export function MobileFilterScreen({
 
   useEffect(() => {
     setCurrentPage(1);
+    if (recentWatchView && signedIn) return;
+
     syncRoute({
       query: searchValue,
       type: appliedType,
@@ -222,7 +267,7 @@ export function MobileFilterScreen({
       year: appliedYear,
       genres: appliedGenres
     });
-  }, [appliedGenres, appliedSeason, appliedType, appliedYear, searchValue]);
+  }, [appliedGenres, appliedSeason, appliedType, appliedYear, recentWatchView, searchValue, signedIn]);
 
   function submitSearch(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -279,6 +324,14 @@ export function MobileFilterScreen({
     const clampedPage = Math.min(Math.max(1, nextPage), totalPages);
     setCurrentPage(clampedPage);
 
+    if (isRecentWatchResults) {
+      const params = new URLSearchParams({ view: "recent-watch" });
+      if (searchValue.trim()) params.set("q", searchValue.trim());
+      if (clampedPage > 1) params.set("page", String(clampedPage));
+      window.history.replaceState({}, "", `/filter?${params.toString()}`);
+      return;
+    }
+
     syncRoute({
       query: searchValue,
       type: appliedType,
@@ -289,6 +342,7 @@ export function MobileFilterScreen({
     });
   }
 
+  const isRecentWatchResults = recentWatchView && signedIn;
   const advancedFilterCount =
     (appliedType !== FILTER_ALL_TYPES ? 1 : 0) +
     (appliedSeason !== FILTER_DEFAULT_SEASON ? 1 : 0) +
@@ -343,40 +397,44 @@ export function MobileFilterScreen({
     <MobileAppShell hideBottomNav={isSheetOpen}>
       <div className="space-y-4">
         <header className="rounded-[28px] border border-[var(--line-soft)] bg-[var(--panel-surface)] px-4 py-4 shadow-[var(--panel-shadow)] backdrop-blur-xl">
-          <div className="flex items-start justify-between gap-3">
-            <div className="space-y-1">
+          <div className="flex items-start justify-between gap-2 sm:gap-3">
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <Link
                   href="/"
                   aria-label="Back to home"
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--line-soft)] bg-[var(--bg-card)] text-[var(--text-primary)]"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--line-soft)] bg-[var(--bg-card)] text-[var(--text-primary)]"
                 >
                   <MaterialIcon className="text-[20px]" name="arrow_back" />
                 </Link>
-                <div>
-                  <p className="text-[0.72rem] uppercase tracking-[0.24em] text-[var(--accent-strong)]">
-                    Mobile Browse
+                <div className="min-w-0">
+                  <p className="truncate text-[0.68rem] uppercase tracking-[0.2em] text-[var(--accent-strong)] sm:text-[0.72rem] sm:tracking-[0.24em]">
+                    {isRecentWatchResults ? "Your history" : "Mobile Browse"}
                   </p>
-                  <h1 className="text-[1.4rem] font-semibold text-[var(--text-primary)]">Filter anime</h1>
+                  <h1 className="whitespace-nowrap text-[1.25rem] font-semibold text-[var(--text-primary)] sm:text-[1.4rem]">
+                    {isRecentWatchResults ? "Recent Watch" : "Filter anime"}
+                  </h1>
                 </div>
               </div>
-              <p className="pl-12 text-sm text-[var(--text-secondary)]">
+              <p className="mt-1 truncate pl-12 text-sm text-[var(--text-secondary)]">
                 {filteredItems.length} result{filteredItems.length === 1 ? "" : "s"} ready
               </p>
             </div>
-            <button
-              type="button"
-              onClick={openSheet}
-              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--accent-soft)] px-4 py-2 text-sm font-semibold text-[var(--accent-strong)]"
-            >
-              <MaterialIcon className="text-[20px]" name="tune" />
-              Filter
-              {advancedFilterCount > 0 ? (
-                <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-[var(--bg-card-soft)] px-1.5 text-[0.74rem] text-[var(--text-primary)]">
-                  {advancedFilterCount}
-                </span>
-              ) : null}
-            </button>
+            {isRecentWatchResults ? null : (
+              <button
+                type="button"
+                onClick={openSheet}
+                className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-[var(--line-strong)] bg-[var(--accent-soft)] px-3 py-2 text-sm font-semibold text-[var(--accent-strong)] sm:gap-2 sm:px-4"
+              >
+                <MaterialIcon className="text-[20px]" name="tune" />
+                Filter
+                {advancedFilterCount > 0 ? (
+                  <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-[var(--bg-card-soft)] px-1.5 text-[0.74rem] text-[var(--text-primary)]">
+                    {advancedFilterCount}
+                  </span>
+                ) : null}
+              </button>
+            )}
           </div>
 
           <form className="mt-4 flex items-center gap-2" onSubmit={submitSearch}>
@@ -411,32 +469,38 @@ export function MobileFilterScreen({
 
           <div className="mt-4 flex items-center justify-between gap-2">
             <p className="text-[0.72rem] uppercase tracking-[0.22em] text-[var(--text-muted)]">
-              Applied filters
+              {isRecentWatchResults ? "Most recently watched" : "Applied filters"}
             </p>
             <span className="text-[0.76rem] text-[var(--text-secondary)]">
               Page {currentPage} of {totalPages}
             </span>
           </div>
 
-          <div className="-mx-1 mt-2 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {summaryChips.length > 0 ? (
-              summaryChips.map((chip) => (
-                <button
-                  key={chip.id}
-                  type="button"
-                  onClick={chip.onRemove}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--line-soft)] bg-[var(--bg-card)] px-3 py-2 text-[0.75rem] font-medium text-[var(--text-primary)]"
-                >
-                  <span>{chip.label}</span>
-                  <MaterialIcon className="text-[16px] text-[var(--text-muted)]" name="close" />
-                </button>
-              ))
-            ) : (
-              <div className="rounded-full border border-dashed border-[var(--line-soft)] bg-[var(--bg-card)] px-3 py-2 text-[0.78rem] text-[var(--text-secondary)]">
-                Search by title or open the sheet to refine results.
-              </div>
-            )}
-          </div>
+          {isRecentWatchResults ? (
+            <p className="mt-2 rounded-full border border-dashed border-[var(--line-soft)] bg-[var(--bg-card)] px-3 py-2 text-[0.78rem] text-[var(--text-secondary)]">
+              {filteredItems.length} unique anime in your recent history.
+            </p>
+          ) : (
+            <div className="-mx-1 mt-2 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {summaryChips.length > 0 ? (
+                summaryChips.map((chip) => (
+                  <button
+                    key={chip.id}
+                    type="button"
+                    onClick={chip.onRemove}
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--line-soft)] bg-[var(--bg-card)] px-3 py-2 text-[0.75rem] font-medium text-[var(--text-primary)]"
+                  >
+                    <span>{chip.label}</span>
+                    <MaterialIcon className="text-[16px] text-[var(--text-muted)]" name="close" />
+                  </button>
+                ))
+              ) : (
+                <div className="rounded-full border border-dashed border-[var(--line-soft)] bg-[var(--bg-card)] px-3 py-2 text-[0.78rem] text-[var(--text-secondary)]">
+                  Search by title or open the sheet to refine results.
+                </div>
+              )}
+            </div>
+          )}
         </header>
 
         {filteredItems.length === 0 ? (
@@ -455,7 +519,7 @@ export function MobileFilterScreen({
           <section className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               {pageItems.map((item) => (
-                <MobilePosterCard key={item.id} item={item} className="min-h-0 w-full shrink" />
+                <MobilePosterCard compact key={item.id} item={item} className="w-full shrink" />
               ))}
             </div>
 

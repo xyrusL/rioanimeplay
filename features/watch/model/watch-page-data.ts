@@ -1,6 +1,11 @@
-import { searchAnimeByTitle } from "@/entities/anime/api/anilist";
-import { mapAniListMediaToWatchItem } from "@/entities/anime/lib/mappers";
-import { matchesAnimeSlug, slugToSearchText } from "@/entities/anime/lib/slug";
+import {
+  fetchAnimeById,
+  fetchAnimeEpisodeNumbers,
+  fetchBrowseCatalog,
+  type CatalogMedia
+} from "@/entities/anime/api/catalog";
+import { mapCatalogMediaToWatchItem } from "@/entities/anime/lib/mappers";
+import { matchesAnimeSlug } from "@/entities/anime/lib/slug";
 import type { WatchAnimeItem } from "@/entities/anime/model/types";
 import { getAnimeRuleBySlug, getAnimeRuleByTitle, getSiteSettings } from "@/shared/lib/site-settings";
 
@@ -8,6 +13,21 @@ export type WatchPageDataResult =
   | { status: "available"; anime: WatchAnimeItem }
   | { status: "locked"; title: string; message: string }
   | { status: "not-found" };
+
+async function resolveWatchMedia(slug: string) {
+  try {
+    return { media: await fetchAnimeById(slug), index: 0 };
+  } catch {
+    const catalog = await fetchBrowseCatalog();
+    const results = [...catalog.anime, ...catalog.movies].filter(
+      (media, index, list) => list.findIndex((item) => item.libraryId === media.libraryId) === index
+    );
+    const matchedIndex = results.findIndex((media) => matchesAnimeSlug(media.title, slug));
+    return matchedIndex === -1
+      ? null
+      : { media: results[matchedIndex] as CatalogMedia, index: matchedIndex };
+  }
+}
 
 export async function getWatchPageData(slug: string) {
   const siteSettings = await getSiteSettings();
@@ -28,14 +48,21 @@ export async function getWatchPageData(slug: string) {
   }
 
   try {
-    const results = await searchAnimeByTitle(slugToSearchText(slug), 10);
-    const matchedIndex = results.findIndex((media) => matchesAnimeSlug(media.title, slug));
-
-    if (matchedIndex === -1) {
+    const resolved = await resolveWatchMedia(slug);
+    if (!resolved) {
       return { status: "not-found" } as const;
     }
 
-    const anime = mapAniListMediaToWatchItem(results[matchedIndex], matchedIndex);
+    const anime = mapCatalogMediaToWatchItem(resolved.media, resolved.index);
+    const episodeNumbers = await fetchAnimeEpisodeNumbers(anime.libraryId).catch(
+      () => anime.episodeNumbers
+    );
+    const playableAnime = {
+      ...anime,
+      episodeCount: episodeNumbers.length,
+      episodeNumbers,
+      episodesLabel: `${episodeNumbers.length}`
+    };
     const titleRule = getAnimeRuleByTitle(siteSettings, anime.title);
 
     if (titleRule?.status === "private") {
@@ -52,7 +79,7 @@ export async function getWatchPageData(slug: string) {
       } as const;
     }
 
-    return { status: "available", anime } as const;
+    return { status: "available", anime: playableAnime } as const;
   } catch {
     return { status: "not-found" } as const;
   }

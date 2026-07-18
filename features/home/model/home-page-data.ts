@@ -1,10 +1,7 @@
-import {
-  fetchTrendingAnimePage,
-  fetchTrendingMoviePage
-} from "@/entities/anime/api/anilist";
+import { fetchHomeCatalog } from "@/entities/anime/api/catalog";
 import { FILTER_GENRE_OPTIONS } from "@/features/browse/model/filter-utils";
 import { formatDecimalScore } from "@/entities/anime/lib/formatters";
-import { mapAniListMediaToHomeItem } from "@/entities/anime/lib/mappers";
+import { mapCatalogMediaToHomeItem } from "@/entities/anime/lib/mappers";
 import type {
   HomeAnimeItem,
   HomePageData,
@@ -25,11 +22,14 @@ function buildWeeklyTop(items: HomeAnimeItem[]): WeeklyTopEntry[] {
     .slice(0, 10)
     .map((item, index) => ({
       id: item.id,
+      libraryId: item.libraryId,
+      urlSlug: item.urlSlug,
       rank: index + 1,
       title: item.title,
       image: item.coverImage,
       scoreLabel: formatDecimalScore(item.score),
-      meta: `${item.formatLabel} • ${item.episodesLabel}`
+      meta: `${item.formatLabel} • ${item.episodesLabel}`,
+      isNsfw: item.isNsfw
     }));
 }
 
@@ -68,7 +68,7 @@ function ensureMovieItemsInGrid(
     return grid;
   }
 
-  // Keep a few live movie cards available so the Movie tab is populated from AniList data first.
+  // Keep several database-backed movie cards available for the Movie tab.
   const supplementalMovies = moviePool.filter(
     (item) =>
       item.formatLabel === "Movie" &&
@@ -87,13 +87,10 @@ export async function getHomePageData(): Promise<HomePageData> {
   let movieItems: HomeAnimeItem[] = [];
 
   try {
-    const [media, movies] = await Promise.all([
-      fetchTrendingAnimePage(1, 90),
-      fetchTrendingMoviePage(1, 36)
-    ]);
+    const { anime: media, movies } = await fetchHomeCatalog();
 
-    items = media.map(mapAniListMediaToHomeItem);
-    movieItems = movies.map(mapAniListMediaToHomeItem);
+    items = media.map(mapCatalogMediaToHomeItem);
+    movieItems = movies.map(mapCatalogMediaToHomeItem);
     items = mergeUniqueItems(items, movieItems);
   } catch {}
 
@@ -101,7 +98,8 @@ export async function getHomePageData(): Promise<HomePageData> {
   items = filterPrivateAnimeItems(items, siteSettings);
   movieItems = filterPrivateAnimeItems(movieItems, siteSettings);
 
-  const featured = items.slice(0, FEATURED_COUNT);
+  const configuredFeatured = items.filter((item) => item.isFeatured);
+  const featured = (configuredFeatured.length ? configuredFeatured : items).slice(0, FEATURED_COUNT);
   const grid = ensureMovieItemsInGrid(
     items.slice(FEATURED_COUNT, FEATURED_COUNT + GRID_COUNT),
     featured,

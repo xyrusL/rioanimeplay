@@ -1,0 +1,28 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "rioanime-api",
+  "main": "worker.js",
+  "compatibility_date": "2026-07-10",
+  "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "api.rioanime.deze.me",
+      "custom_domain": true
+    }
+  ],
+  "triggers": {
+    "crons": ["17 3 * * *"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "rioanime-db",
+      "database_id": "8c04aea8-3666-46f7-bc74-c05405ab5530",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}

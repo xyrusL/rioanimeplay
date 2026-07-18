@@ -10,11 +10,13 @@ import { ScrollToTopButton } from "@/shared/ui/scroll-to-top-button";
 
 type DesktopHomeScreenProps = {
   homePageData: HomePageData;
+  member: { name: string; email: string; image: string | null } | null;
   siteSettings: SiteSettings;
 };
 
 export function DesktopHomeScreen({
   homePageData,
+  member,
   siteSettings
 }: DesktopHomeScreenProps) {
   return (
@@ -24,16 +26,14 @@ export function DesktopHomeScreen({
         <div className="mt-5 grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
           <div className="space-y-5">
             <FeaturedHero featured={homePageData.featured} />
-            <AnnouncementStrip
-              message={siteSettings.announcement.message}
-              title={siteSettings.announcement.title}
-            />
+            <AnnouncementStrip />
             <AnimeGrid items={homePageData.grid} />
           </div>
           <RightSidebar
             authLockdownEnabled={siteSettings.authLockdown.enabled}
             authLockdownMessage={siteSettings.authLockdown.message}
             genres={homePageData.sidebarGenres}
+            member={member}
             weeklyTop={homePageData.weeklyTop}
           />
         </div>

@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 
+import { auth } from "@/auth";
 import {
   FILTER_ALL_TYPES,
   FILTER_ALL_YEARS,
@@ -35,13 +36,14 @@ type FilterPageProps = {
     page?: string;
     season?: string;
     year?: string;
+    view?: string;
   }>;
 };
 
 export default async function FilterPage({ searchParams }: FilterPageProps) {
   const headerStore = await headers();
   const initialIsMobile = isLikelyMobileUserAgent(headerStore.get("user-agent") ?? "");
-  const params = await searchParams;
+  const [params, session] = await Promise.all([searchParams, auth()]);
   const query = normalizeQuery(params.q);
   const season = normalizeSeason(params.season);
   const year = normalizeYear(params.year);
@@ -75,6 +77,8 @@ export default async function FilterPage({ searchParams }: FilterPageProps) {
           initialSeason={season}
           initialType={selectedType}
           initialYear={year}
+          recentWatchView={params.view === "recent-watch"}
+          signedIn={Boolean(session?.user)}
           types={typeOptions.length > 0 ? typeOptions : [FILTER_ALL_TYPES]}
         />
       }

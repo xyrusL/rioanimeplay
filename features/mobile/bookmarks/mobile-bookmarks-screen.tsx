@@ -5,12 +5,12 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { formatDecimalScore } from "@/entities/anime/lib/formatters";
-import { toAnimeSlug } from "@/entities/anime/lib/slug";
 import type { HomeAnimeItem } from "@/entities/anime/model/types";
 import { MobileAppShell } from "@/features/mobile/shared/mobile-app-shell";
 import {
   getBookmarkedAnimeIds,
   getSavedEpisode,
+  LIBRARY_CHANGE_EVENT,
   toggleAnimeBookmark
 } from "@/shared/lib/watch-storage";
 import { MaterialIcon } from "@/shared/ui/icons/material-icon";
@@ -25,7 +25,7 @@ type SavedCardProps = {
 };
 
 function SavedAnimeCard({ item, onRemove }: SavedCardProps) {
-  const href = `/watch/${toAnimeSlug(item.title)}`;
+  const href = `/watch/${encodeURIComponent(item.urlSlug)}`;
 
   return (
     <article className="group relative overflow-hidden rounded-[28px] border border-[var(--line-soft)] bg-[var(--bg-card)] shadow-[var(--soft-shadow)]">
@@ -83,18 +83,26 @@ export function MobileBookmarksScreen({ catalog }: MobileBookmarksScreenProps) {
   const [activeType, setActiveType] = useState("All");
 
   useEffect(() => {
-    setBookmarkedIds(getBookmarkedAnimeIds());
+    function refreshBookmarks() {
+      setBookmarkedIds(getBookmarkedAnimeIds());
+    }
+
+    refreshBookmarks();
 
     const handleStorage = (event: StorageEvent) => {
       if (event.key && event.key !== "rioanime:bookmarks") {
         return;
       }
 
-      setBookmarkedIds(getBookmarkedAnimeIds());
+      refreshBookmarks();
     };
 
     window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+    window.addEventListener(LIBRARY_CHANGE_EVENT, refreshBookmarks);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener(LIBRARY_CHANGE_EVENT, refreshBookmarks);
+    };
   }, []);
 
   function handleRemoveBookmark(animeId: number) {
@@ -268,7 +276,7 @@ export function MobileBookmarksScreen({ catalog }: MobileBookmarksScreenProps) {
                           Ep {getSavedEpisode(item.id)}
                         </span>
                         <Link
-                          href={`/watch/${toAnimeSlug(item.title)}`}
+                          href={`/watch/${encodeURIComponent(item.urlSlug)}`}
                           className="inline-flex items-center gap-1.5 rounded-full bg-[linear-gradient(135deg,var(--accent-strong),var(--accent))] px-3 py-1.5 text-[0.72rem] font-semibold text-[var(--bg-base)]"
                         >
                           <MaterialIcon className="text-[15px]" filled name="play_arrow" />

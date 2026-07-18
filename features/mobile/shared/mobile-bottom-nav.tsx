@@ -9,7 +9,7 @@ const MOBILE_NAV_ITEMS = [
   { href: "/", icon: "home", label: "Home" },
   { href: "/filter", icon: "tune", label: "Filter" },
   { href: "/bookmarks", icon: "favorite", label: "Bookmarks" },
-  { href: "/account", icon: "settings", label: "Setting" }
+  { href: "/account", icon: "person", label: "Account" }
 ] as const;
 
 function isActivePath(pathname: string, href: string) {

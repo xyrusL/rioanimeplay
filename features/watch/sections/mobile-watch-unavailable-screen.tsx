@@ -19,7 +19,7 @@ export function MobileWatchUnavailableScreen({
             <MaterialIcon className="text-[30px]" name="movie_off" />
           </span>
           <p className="mt-4 text-[0.72rem] uppercase tracking-[0.24em] text-[rgba(157,216,255,0.72)]">
-            Temporary unavailable
+            Unavailable
           </p>
           <h1 className="mt-2 text-[1.55rem] leading-[1.08] font-semibold text-white">{title}</h1>
           <p className="mt-4 text-sm leading-7 text-[rgba(222,230,238,0.72)]">{message}</p>

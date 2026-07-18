@@ -10,17 +10,18 @@ import {
   getFilterYearOptions
 } from "@/features/browse/model/filter-utils";
 import { CustomSelect } from "@/shared/ui/custom-select";
-import { toAnimeSlug } from "@/entities/anime/lib/slug";
 import type { WeeklyTopEntry } from "@/entities/anime/model/types";
 import { AnimatedModal } from "@/shared/ui/animated-modal";
 import { MaterialIcon } from "@/shared/ui/icons/material-icon";
 import { LockdownAction } from "@/shared/ui/lockdown-action";
 import { Panel } from "@/shared/ui/panel";
+import { ProfileAvatar } from "@/shared/ui/profile-avatar";
 
 type RightSidebarProps = {
   authLockdownEnabled: boolean;
   authLockdownMessage: string;
   genres: string[];
+  member: { name: string; email: string; image: string | null } | null;
   weeklyTop: WeeklyTopEntry[];
 };
 
@@ -30,6 +31,7 @@ export function RightSidebar({
   authLockdownEnabled,
   authLockdownMessage,
   genres,
+  member,
   weeklyTop
 }: RightSidebarProps) {
   const router = useRouter();
@@ -53,49 +55,53 @@ export function RightSidebar({
       <aside className="space-y-5 xl:sticky xl:top-4 xl:self-start">
         <Panel icon="account_circle" title="Member Access">
           <div className="space-y-4 p-4">
-            <label className="space-y-1.5">
-              <span className="text-[0.68rem] uppercase tracking-[0.2em] text-[var(--text-muted)]">
-                Username
-              </span>
-              <input
-                readOnly
-                placeholder="Username"
-                className="h-10 w-full rounded-xl border border-[var(--line-soft)] bg-[rgba(255,255,255,0.03)] px-3 text-sm text-[var(--text-secondary)] outline-none placeholder:text-[var(--text-muted)]"
-              />
-            </label>
-            <label className="space-y-1.5">
-              <span className="text-[0.68rem] uppercase tracking-[0.2em] text-[var(--text-muted)]">
-                Password
-              </span>
-              <input
-                readOnly
-                placeholder="Password"
-                className="h-10 w-full rounded-xl border border-[var(--line-soft)] bg-[rgba(255,255,255,0.03)] px-3 text-sm text-[var(--text-secondary)] outline-none placeholder:text-[var(--text-muted)]"
-              />
-            </label>
-            <div className="flex items-center justify-between gap-3">
-              <label className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
-                <input type="checkbox" readOnly checked className="accent-[var(--accent)]" />
-                Remember me
-              </label>
-              <LockdownAction
-                locked={authLockdownEnabled}
-                message={authLockdownMessage}
-                className="text-xs uppercase tracking-[0.18em] text-[var(--accent-strong)]"
-                href="/account?mode=register"
-              >
-                Register
-              </LockdownAction>
-            </div>
-            <LockdownAction
-              locked={authLockdownEnabled}
-              message={authLockdownMessage}
-              href="/account?mode=login"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,var(--accent),#5f4ed8)] px-4 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-white shadow-[0_14px_28px_rgba(95,78,216,0.28)]"
-            >
-              <MaterialIcon className="text-[18px]" name="login" />
-              Login
-            </LockdownAction>
+            {member ? (
+              <>
+                <div className="rounded-[18px] border border-emerald-300/10 bg-[linear-gradient(145deg,rgba(62,210,151,0.08),rgba(128,78,225,0.07))] p-4">
+                  <div className="flex items-center gap-3">
+                    <ProfileAvatar
+                      className="h-11 w-11 rounded-full bg-[linear-gradient(135deg,#e45da9,#765be5)] text-base font-black text-white shadow-[0_10px_24px_rgba(157,72,206,0.2)]"
+                      image={member.image}
+                      imageSizes="44px"
+                      name={member.name}
+                    />
+                    <span className="min-w-0">
+                      <span className="flex items-center gap-1.5 text-[0.64rem] font-bold uppercase tracking-[0.16em] text-emerald-300/80">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
+                        Signed in
+                      </span>
+                      <strong className="mt-1 block truncate text-sm text-[var(--text-primary)]">{member.name}</strong>
+                    </span>
+                  </div>
+                  {member.email ? <p className="mt-3 truncate text-xs text-[var(--text-muted)]">{member.email}</p> : null}
+                </div>
+                <Link href="/account" className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,var(--accent),#5f4ed8)] px-4 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-white shadow-[0_14px_28px_rgba(95,78,216,0.28)]">
+                  <MaterialIcon className="text-[18px]" name="manage_accounts" />
+                  Open Account
+                </Link>
+              </>
+            ) : (
+              <>
+                <div className="rounded-[18px] border border-[rgba(255,255,255,0.06)] bg-[linear-gradient(145deg,rgba(231,82,169,0.08),rgba(128,78,225,0.07))] p-4">
+                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-white/[0.05] text-[var(--accent-strong)]">
+                    <MaterialIcon className="text-[22px]" name="verified_user" />
+                  </span>
+                  <p className="mt-4 text-sm font-semibold text-[var(--text-primary)]">One secure sign-in</p>
+                  <p className="mt-1.5 text-xs leading-5 text-[var(--text-muted)]">
+                    Use your Google account. No separate username, password, or verification code is needed.
+                  </p>
+                </div>
+                <LockdownAction
+                  locked={authLockdownEnabled}
+                  message={authLockdownMessage}
+                  href="/account"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,var(--accent),#5f4ed8)] px-4 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-white shadow-[0_14px_28px_rgba(95,78,216,0.28)]"
+                >
+                  <MaterialIcon className="text-[18px]" name="account_circle" />
+                  Continue with Google
+                </LockdownAction>
+              </>
+            )}
           </div>
         </Panel>
 
@@ -175,7 +181,7 @@ export function RightSidebar({
               {weeklyTop.map((entry) => (
                 <Link
                   key={entry.id}
-                  href={`/watch/${toAnimeSlug(entry.title)}`}
+                  href={`/watch/${encodeURIComponent(entry.urlSlug)}`}
                   className="flex items-center gap-3 rounded-[18px] border border-[rgba(255,255,255,0.05)] bg-[rgba(255,255,255,0.03)] p-3 transition-[border-color,transform,background-color] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:-translate-y-0.5 hover:border-[var(--line-strong)]"
                 >
                   <div className="flex w-6 shrink-0 justify-center font-display text-[0.98rem] text-[var(--gold)]">

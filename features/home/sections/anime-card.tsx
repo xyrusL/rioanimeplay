@@ -1,10 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { formatDecimalScore } from "@/entities/anime/lib/formatters";
-import { toAnimeSlug } from "@/entities/anime/lib/slug";
 import type { HomeAnimeItem } from "@/entities/anime/model/types";
 import { MaterialIcon } from "@/shared/ui/icons/material-icon";
+import { SensitiveImage } from "@/shared/ui/sensitive-image";
 
 type AnimeCardProps = {
   item: HomeAnimeItem;
@@ -16,7 +15,7 @@ function getYearLabel(seasonLabel: string) {
 }
 
 export function AnimeCard({ item }: AnimeCardProps) {
-  const watchHref = `/watch/${toAnimeSlug(item.title)}`;
+  const watchHref = `/watch/${encodeURIComponent(item.urlSlug)}`;
 
   return (
     <Link
@@ -24,7 +23,9 @@ export function AnimeCard({ item }: AnimeCardProps) {
       className="group block overflow-hidden rounded-[22px] border border-[var(--line-soft)] bg-[var(--bg-card)] transition-[transform,border-color,box-shadow,background-color] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:-translate-y-1 hover:border-[var(--line-strong)] hover:shadow-[var(--card-shadow)]"
     >
       <div className="relative aspect-[7/8] overflow-hidden">
-        <Image
+        <SensitiveImage
+          isNsfw={item.isNsfw}
+          overlay="card"
           fill
           alt={item.title}
           className="object-cover transition-[transform,filter] duration-[var(--motion-slow)] ease-[var(--ease-soft)] group-hover:scale-[1.04] group-hover:blur-[6px]"
@@ -72,7 +73,7 @@ export function AnimeCard({ item }: AnimeCardProps) {
 }
 
 export function FeaturedPosterCard({ item }: AnimeCardProps) {
-  const watchHref = `/watch/${toAnimeSlug(item.title)}`;
+  const watchHref = `/watch/${encodeURIComponent(item.urlSlug)}`;
 
   return (
     <Link
@@ -80,7 +81,9 @@ export function FeaturedPosterCard({ item }: AnimeCardProps) {
       className="group block overflow-hidden rounded-[18px] border border-[var(--line-soft)] bg-[rgba(11,12,16,0.42)] transition-[border-color,background-color] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:border-[var(--line-strong)] hover:bg-[rgba(19,20,25,0.72)]"
     >
       <div className="relative aspect-[4/5] overflow-hidden">
-        <Image
+        <SensitiveImage
+          isNsfw={item.isNsfw}
+          overlay="card"
           fill
           alt={item.title}
           className="object-cover transition-transform duration-[var(--motion-slow)] ease-[var(--ease-soft)] group-hover:scale-[1.05]"

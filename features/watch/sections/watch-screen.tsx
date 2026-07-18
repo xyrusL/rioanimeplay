@@ -2,17 +2,23 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { formatDecimalScore } from "@/entities/anime/lib/formatters";
 import type { WatchAnimeItem } from "@/entities/anime/model/types";
 import { SearchAutocomplete } from "@/features/search/sections/search-autocomplete";
+import { SmartVideoPlayer } from "@/features/watch/sections/smart-video-player";
 import {
   getSavedEpisode,
+  getWatchedEpisodes,
   isAnimeBookmarked,
+  LIBRARY_CHANGE_EVENT,
   saveEpisodeProgress,
+  saveRecentWatch,
   toggleAnimeBookmark
 } from "@/shared/lib/watch-storage";
+import { AgeWarningDialog } from "@/shared/ui/age-warning-dialog";
+import { useAgeGate } from "@/shared/ui/age-gate-provider";
 import { MaterialIcon } from "@/shared/ui/icons/material-icon";
 
 type WatchScreenProps = {
@@ -20,30 +26,105 @@ type WatchScreenProps = {
 };
 
 export function WatchScreen({ anime }: WatchScreenProps) {
+  const { ready: ageGateReady, confirmed: adultConfirmed } = useAgeGate();
   const [selectedEpisode, setSelectedEpisode] = useState(1);
+  const [watchedEpisodes, setWatchedEpisodes] = useState<number[]>([]);
   const [isBookmarked, setIsBookmarked] = useState(false);
-  const episodeNumbers = useMemo(
-    () => Array.from({ length: anime.episodeCount }, (_, index) => index + 1),
-    [anime.episodeCount]
-  );
+  const [isLightsOff, setIsLightsOff] = useState(false);
+  const [isPlayerExpanded, setIsPlayerExpanded] = useState(false);
+  const [playerReloadToken, setPlayerReloadToken] = useState(0);
+  const episodeNumbers = anime.episodeNumbers;
+  const selectedEpisodeIndex = episodeNumbers.indexOf(selectedEpisode);
+  const nextEpisode = episodeNumbers[selectedEpisodeIndex + 1] ?? null;
 
   useEffect(() => {
-    const savedEpisode = Math.min(Math.max(getSavedEpisode(anime.id), 1), anime.episodeCount);
-    setSelectedEpisode(savedEpisode);
-    setIsBookmarked(isAnimeBookmarked(anime.id));
-  }, [anime.episodeCount, anime.id]);
+    function refreshLibraryState() {
+      const savedEpisode = getSavedEpisode(anime.id);
+      setSelectedEpisode(
+        anime.episodeNumbers.includes(savedEpisode) ? savedEpisode : (anime.episodeNumbers[0] ?? 1)
+      );
+      setWatchedEpisodes(getWatchedEpisodes(anime.id));
+      setIsBookmarked(isAnimeBookmarked(anime.id));
+    }
+
+    refreshLibraryState();
+    window.addEventListener(LIBRARY_CHANGE_EVENT, refreshLibraryState);
+    return () => window.removeEventListener(LIBRARY_CHANGE_EVENT, refreshLibraryState);
+  }, [anime.episodeNumbers, anime.id]);
 
   useEffect(() => {
-    saveEpisodeProgress(anime.id, selectedEpisode);
-  }, [anime.id, selectedEpisode]);
+    if (anime.episodeNumbers.includes(selectedEpisode)) {
+      saveEpisodeProgress(anime.id, selectedEpisode);
+      saveRecentWatch(anime.id);
+      setWatchedEpisodes(getWatchedEpisodes(anime.id));
+    }
+  }, [anime.episodeNumbers, anime.id, selectedEpisode]);
+
+  useEffect(() => {
+    if (!isPlayerExpanded) return;
+
+    const originalOverflow = document.body.style.overflow;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsPlayerExpanded(false);
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isPlayerExpanded]);
 
   function handleBookmarkToggle() {
     const nextIds = toggleAnimeBookmark(anime.id);
     setIsBookmarked(nextIds.includes(anime.id));
   }
 
+  if (anime.isNsfw && (!ageGateReady || !adultConfirmed)) {
+    return (
+      <AgeWarningDialog
+        title={anime.title}
+        artwork={anime.bannerImage ?? anime.coverImage}
+      />
+    );
+  }
+
+  if (isPlayerExpanded) {
+    return (
+      <main className="fixed inset-0 z-[100] flex items-center justify-center bg-black text-[var(--text-primary)]">
+        <button
+          type="button"
+          aria-label="Restore watch page"
+          title="Restore watch page (Esc)"
+          onClick={() => setIsPlayerExpanded(false)}
+          className="absolute top-5 right-5 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/65 text-white shadow-[0_12px_30px_rgba(0,0,0,0.4)] backdrop-blur-md transition-colors hover:bg-white/10"
+        >
+          <MaterialIcon className="text-[24px]" name="fullscreen_exit" />
+        </button>
+        <SmartVideoPlayer
+          animeId={anime.libraryId}
+          episodeNumber={selectedEpisode}
+          poster={anime.bannerImage ?? anime.coverImage}
+          title={anime.title}
+          className="h-screen max-h-screen w-screen"
+          reloadToken={playerReloadToken}
+        />
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
+      {isLightsOff ? (
+        <button
+          type="button"
+          aria-label="Turn cinema lights on"
+          onClick={() => setIsLightsOff(false)}
+          className="fixed inset-0 z-40 cursor-pointer bg-black/95"
+        />
+      ) : null}
       <div className="site-shell desktop-shell--watch mx-auto flex min-h-screen w-full flex-col px-4 pb-10 pt-4 sm:px-6 xl:px-24 2xl:px-28">
         <header className="mb-5 flex flex-wrap items-center gap-3 rounded-[24px] border border-[var(--line-soft)] bg-[var(--watch-topbar-surface)] px-4 py-3 shadow-[var(--soft-shadow)]">
           <div className="flex items-center gap-2 text-[var(--text-secondary)]">
@@ -87,67 +168,69 @@ export function WatchScreen({ anime }: WatchScreenProps) {
           </div>
         </header>
 
-        <section className="overflow-hidden rounded-[28px] border border-[var(--line-soft)] bg-[var(--watch-panel-surface)] shadow-[var(--hero-shadow)]">
+        <section className={`relative overflow-hidden rounded-[28px] border border-[var(--line-soft)] bg-[var(--watch-panel-surface)] shadow-[var(--hero-shadow)] ${isLightsOff ? "z-50" : ""}`}>
           <div className="flex items-center justify-between border-b border-[var(--line-soft)] bg-[var(--watch-panel-header)] px-4 py-3">
             <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--text-secondary)]">
               <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[var(--accent-strong)]">
                 Ep {selectedEpisode}
               </span>
-              <span>Demo Player Placeholder</span>
+              <span>Episode selection</span>
             </div>
             <div className="flex items-center gap-1">
-              {[
-                { name: "sync", label: "Refresh player" },
-                { name: "lightbulb", label: "Tips" },
-                { name: "bolt", label: "Quick action" },
-                { name: "fast_forward", label: "Next source" }
-              ].map((action) => (
-                <button
-                  key={action.name}
-                  type="button"
-                  aria-label={action.label}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-muted)] transition-[color,background-color] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[var(--text-primary)]"
-                >
-                  <MaterialIcon className="text-[18px]" name={action.name} />
-                </button>
-              ))}
+              <button
+                type="button"
+                aria-label="Refresh episode player"
+                title="Refresh episode player"
+                onClick={() => setPlayerReloadToken((value) => value + 1)}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-muted)] transition-[color,background-color,transform] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:rotate-12 hover:bg-[rgba(255,255,255,0.05)] hover:text-[var(--text-primary)]"
+              >
+                <MaterialIcon className="text-[18px]" name="sync" />
+              </button>
+              <button
+                type="button"
+                aria-label={isLightsOff ? "Turn cinema lights on" : "Turn cinema lights off"}
+                title={isLightsOff ? "Turn cinema lights on" : "Turn cinema lights off"}
+                aria-pressed={isLightsOff}
+                onClick={() => setIsLightsOff((value) => !value)}
+                className={`inline-flex h-8 w-8 items-center justify-center rounded-full transition-[color,background-color] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:bg-[rgba(255,255,255,0.05)] hover:text-[var(--text-primary)] ${isLightsOff ? "bg-[var(--accent-soft)] text-[var(--accent-strong)]" : "text-[var(--text-muted)]"}`}
+              >
+                <MaterialIcon className="text-[18px]" filled={isLightsOff} name="lightbulb" />
+              </button>
+              <button
+                type="button"
+                disabled={nextEpisode === null}
+                aria-label={nextEpisode === null ? "No next episode" : `Play episode ${nextEpisode}`}
+                title={nextEpisode === null ? "No next episode" : `Next episode: ${nextEpisode}`}
+                onClick={() => {
+                  if (nextEpisode !== null) setSelectedEpisode(nextEpisode);
+                }}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-muted)] transition-[color,background-color,transform] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:translate-x-0.5 hover:bg-[rgba(255,255,255,0.05)] hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:translate-x-0 disabled:hover:bg-transparent"
+              >
+                <MaterialIcon className="text-[18px]" name="fast_forward" />
+              </button>
+              <button
+                type="button"
+                aria-label="Maximize video player"
+                title="Maximize video player"
+                onClick={() => {
+                  setIsLightsOff(false);
+                  setIsPlayerExpanded(true);
+                }}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-muted)] transition-[color,background-color,transform] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:scale-105 hover:bg-[rgba(255,255,255,0.05)] hover:text-[var(--text-primary)]"
+              >
+                <MaterialIcon className="text-[21px]" name="fullscreen" />
+              </button>
             </div>
           </div>
 
-          <div className="relative isolate overflow-hidden">
-            <div className="absolute inset-0">
-              <Image
-                fill
-                alt={anime.title}
-                className="object-cover opacity-22"
-                sizes="100vw"
-                src={anime.bannerImage ?? anime.coverImage}
-              />
-              <div className="absolute inset-0 bg-[var(--watch-player-overlay)]" />
-            </div>
-
-            <div className="relative flex aspect-video min-h-[320px] items-center justify-center px-6 py-10 sm:min-h-[460px]">
-              <div className="max-w-xl space-y-4 text-center">
-                <button
-                  type="button"
-                  aria-label={`Play episode ${selectedEpisode}`}
-                  className="mx-auto flex h-18 w-18 items-center justify-center rounded-[22px] border border-[var(--line-strong)] bg-[var(--watch-player-chip)] text-[var(--accent-strong)] shadow-[0_18px_48px_rgba(0,0,0,0.32)] transition-[transform,border-color,background-color] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:-translate-y-0.5 hover:border-[var(--accent-strong)] hover:bg-[rgba(31,28,43,0.98)]"
-                >
-                  <MaterialIcon className="text-[42px]" filled name="play_arrow" />
-                </button>
-                <div className="space-y-2">
-                  <p className="font-display text-[1.05rem] uppercase tracking-[0.18em] text-[var(--text-primary)]">
-                    Episode {selectedEpisode} is not streaming yet
-                  </p>
-                  <p className="text-sm leading-6 text-[var(--text-secondary)] sm:text-[0.96rem]">
-                    This watch page is ready, but video playback has not been connected yet. Use
-                    the episode buttons below to preview the layout.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-          </div>
+          <SmartVideoPlayer
+            animeId={anime.libraryId}
+            episodeNumber={selectedEpisode}
+            poster={anime.bannerImage ?? anime.coverImage}
+            title={anime.title}
+            className="min-h-[320px] sm:min-h-[460px]"
+            reloadToken={playerReloadToken}
+          />
         </section>
 
         <section className="mt-5 overflow-hidden rounded-[28px] border border-[var(--line-soft)] bg-[var(--watch-panel-surface)] shadow-[var(--soft-shadow)]">
@@ -194,7 +277,7 @@ export function WatchScreen({ anime }: WatchScreenProps) {
                     Episode List
                   </p>
                   <p className="text-sm text-[var(--text-secondary)]">
-                    Pick an episode to preview the watch state.
+                    Pick an episode from the available list.
                   </p>
                 </div>
                 <div className="text-sm text-[var(--text-secondary)]">
@@ -212,7 +295,9 @@ export function WatchScreen({ anime }: WatchScreenProps) {
                       className={`inline-flex h-12 w-14 items-center justify-center rounded-[14px] border px-0 py-2 text-sm font-semibold tabular-nums transition-[transform,border-color,color,background-color,box-shadow] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:-translate-y-0.5 ${
                         selectedEpisode === episodeNumber
                           ? "border-[var(--line-strong)] bg-[var(--accent-soft)] text-[var(--accent-strong)] shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_10px_28px_rgba(0,0,0,0.2)]"
-                          : "border-[var(--line-soft)] bg-[rgba(255,255,255,0.03)] text-[var(--text-secondary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] hover:border-[var(--line-strong)] hover:text-[var(--text-primary)]"
+                          : watchedEpisodes.includes(episodeNumber)
+                            ? "border-white/10 bg-white/10 text-white/55"
+                            : "border-[var(--line-soft)] bg-[rgba(255,255,255,0.03)] text-[var(--text-secondary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] hover:border-[var(--line-strong)] hover:text-[var(--text-primary)]"
                       }`}
                     >
                       {episodeNumber}

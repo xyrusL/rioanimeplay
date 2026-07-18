@@ -4,6 +4,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { toAnimeSlug } from "@/entities/anime/lib/slug";
+import { DEFAULT_ADMIN_APPEARANCE, normalizeAdminAppearance, type AdminAppearance } from "@/shared/lib/admin-appearance";
 
 export const THEME_PRESETS = [
   "dark-purple",
@@ -53,6 +54,7 @@ export type SiteSettings = {
   announcement: SiteAnnouncementSettings;
   authLockdown: SiteAuthLockdownSettings;
   animeRules: SiteAnimeRule[];
+  adminAppearance: AdminAppearance;
 };
 
 const SETTINGS_DIR = path.join(process.cwd(), "data");
@@ -62,16 +64,16 @@ const DEFAULT_SITE_SETTINGS: SiteSettings = {
   themePreset: "dark-purple",
   fontPreset: "lexend-default",
   announcement: {
-    title: "Dear Viewers",
+    title: "Welcome to RioAnimePlay",
     message:
-      "This homepage is under development. The layout is being rebuilt in Next.js and Tailwind CSS to mirror the original RioAnime portal with a cleaner structure and temporary AniList demo content."
+      "Browse the RioAnime library, search titles, explore genres, and open available episodes from one place."
   },
   authLockdown: {
     enabled: false,
-    message:
-      "Login and registration are temporarily unavailable for the moment. Please wait for a further announcement."
+    message: "Login and registration are currently unavailable."
   },
-  animeRules: []
+  animeRules: [],
+  adminAppearance: DEFAULT_ADMIN_APPEARANCE
 };
 
 function isThemePreset(value: string): value is ThemePreset {
@@ -159,7 +161,8 @@ function normalizeSettings(input: unknown): SiteSettings {
           ? authLockdown.message.trim()
           : DEFAULT_SITE_SETTINGS.authLockdown.message
     },
-    animeRules: normalizeAnimeRules(candidate.animeRules)
+    animeRules: normalizeAnimeRules(candidate.animeRules),
+    adminAppearance: normalizeAdminAppearance(candidate.adminAppearance)
   };
 }
 

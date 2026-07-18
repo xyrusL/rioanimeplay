@@ -1,6 +1,5 @@
-import { fetchTrendingAnimePage, fetchTrendingMoviePage } from "@/entities/anime/api/anilist";
-import { mapAniListMediaToHomeItem } from "@/entities/anime/lib/mappers";
-import { toAnimeSlug } from "@/entities/anime/lib/slug";
+import { fetchAlphabeticalCatalog, fetchBrowseCatalog } from "@/entities/anime/api/catalog";
+import { mapCatalogMediaToHomeItem } from "@/entities/anime/lib/mappers";
 import type { HomeAnimeItem } from "@/entities/anime/model/types";
 import { filterPrivateAnimeItems, getSiteSettings } from "@/shared/lib/site-settings";
 
@@ -33,21 +32,12 @@ function getAlphabetBucket(title: string) {
 
 export async function getBrowseCatalogRaw(): Promise<HomeAnimeItem[]> {
   try {
-    const [pageOne, pageTwo, pageThree, pageFour, movies] = await Promise.all([
-      fetchTrendingAnimePage(1, 50),
-      fetchTrendingAnimePage(2, 50),
-      fetchTrendingAnimePage(3, 50),
-      fetchTrendingAnimePage(4, 50),
-      fetchTrendingMoviePage(1, 50)
-    ]);
+    const { anime, movies } = await fetchBrowseCatalog();
 
     return sortAlphabetically(
       mergeUniqueItems(
-        pageOne.map(mapAniListMediaToHomeItem),
-        pageTwo.map(mapAniListMediaToHomeItem),
-        pageThree.map(mapAniListMediaToHomeItem),
-        pageFour.map(mapAniListMediaToHomeItem),
-        movies.map(mapAniListMediaToHomeItem)
+        anime.map(mapCatalogMediaToHomeItem),
+        movies.map(mapCatalogMediaToHomeItem)
       )
     );
   } catch {
@@ -65,7 +55,14 @@ export async function getBrowseCatalog(): Promise<HomeAnimeItem[]> {
 }
 
 export async function getAlphabeticalAnimeGroups(): Promise<AlphabeticalAnimeGroup[]> {
-  const catalog = await getBrowseCatalog();
+  const [media, siteSettings] = await Promise.all([
+    fetchAlphabeticalCatalog(),
+    getSiteSettings()
+  ]);
+  const catalog = filterPrivateAnimeItems(
+    sortAlphabetically(media.map(mapCatalogMediaToHomeItem)),
+    siteSettings
+  );
   const groups = new Map<string, HomeAnimeItem[]>();
 
   for (const item of catalog) {
@@ -99,5 +96,5 @@ export async function getRandomAnimeHref() {
   }
 
   const randomItem = catalog[Math.floor(Math.random() * catalog.length)];
-  return `/watch/${toAnimeSlug(randomItem.title)}`;
+  return `/watch/${encodeURIComponent(randomItem.urlSlug)}`;
 }

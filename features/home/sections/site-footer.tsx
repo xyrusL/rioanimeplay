@@ -8,7 +8,7 @@ export function SiteFooter() {
         Watch HD Anime for Free @ 2026 RioAnimePlay
       </p>
       <p className="mt-2 text-[0.78rem] leading-6 text-[var(--text-muted)]">
-        Demo homepage only. AniList data is temporarily used to shape the current public intro page.
+        Browse the RioAnimePlay catalog and available episodes.
       </p>
     </footer>
   );

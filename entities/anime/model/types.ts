@@ -1,5 +1,7 @@
 export type HomeAnimeItem = {
   id: number;
+  libraryId: string;
+  urlSlug: string;
   title: string;
   alternateTitles: string[];
   subtitle: string;
@@ -11,23 +13,28 @@ export type HomeAnimeItem = {
   formatLabel: string;
   seasonLabel: string;
   genres: string[];
-  hasSub: boolean;
-  hasDub: boolean;
   accent: string;
   popularity: number;
+  isNsfw: boolean;
+  isFeatured: boolean;
 };
 
 export type WeeklyTopEntry = {
   id: number;
+  libraryId: string;
+  urlSlug: string;
   rank: number;
   title: string;
   image: string;
   scoreLabel: string;
   meta: string;
+  isNsfw: boolean;
 };
 
 export type WatchAnimeItem = {
   id: number;
+  libraryId: string;
+  urlSlug: string;
   title: string;
   description: string;
   coverImage: string;
@@ -40,7 +47,9 @@ export type WatchAnimeItem = {
   genres: string[];
   accent: string;
   episodeCount: number;
+  episodeNumbers: number[];
   episodesLabel: string;
+  isNsfw: boolean;
 };
 
 export type HomePageData = {

@@ -2,7 +2,10 @@ import type { Metadata, Viewport } from "next";
 import { Lexend_Deca, Manrope, Nunito, Outfit, Sora } from "next/font/google";
 
 import { getSiteSettings } from "@/shared/lib/site-settings";
+import { AgeGateProvider } from "@/shared/ui/age-gate-provider";
+import { PublicCacheStatus } from "@/shared/ui/public-cache-status";
 import { RouteProgress } from "@/shared/ui/route-progress";
+import { UserLibrarySync } from "@/shared/ui/user-library-sync";
 import "./globals.css";
 
 const lexendDeca = Lexend_Deca({
@@ -65,8 +68,7 @@ export default async function RootLayout({
       data-theme-preset={siteSettings.themePreset}
     >
       <body suppressHydrationWarning>
-        <RouteProgress />
-        {children}
+        <AgeGateProvider><RouteProgress /><UserLibrarySync />{children}<PublicCacheStatus /></AgeGateProvider>
       </body>
     </html>
   );
