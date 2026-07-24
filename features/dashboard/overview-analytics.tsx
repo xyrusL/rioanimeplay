@@ -111,14 +111,14 @@ function ComparisonBars({ primary, secondary }: { primary: { label: string; valu
 
 function Card({ icon, label, value, detail, tone, visual }: { icon: string; label: string; value: string; detail: string; tone: string; visual: React.ReactNode }) {
   return (
-    <article className="flex min-h-[190px] flex-col rounded-2xl border border-[#292e3c] bg-[#151923] p-4 shadow-[0_14px_35px_rgba(0,0,0,0.18)]">
-      <div className="flex items-center justify-between gap-3">
-        <span className={`grid h-8 w-8 place-items-center rounded-lg ${tone}`}><MaterialIcon className="text-[16px]" filled name={icon} /></span>
-        <span className="text-[23px] font-bold tracking-[-0.035em] text-[#f5f7fb]">{value}</span>
+    <article className="flex min-h-[190px] min-w-0 flex-col overflow-hidden rounded-2xl border border-[#292e3c] bg-[#151923] p-4 shadow-[0_14px_35px_rgba(0,0,0,0.18)]">
+      <div className="flex min-w-0 items-center justify-between gap-3">
+        <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${tone}`}><MaterialIcon className="text-[16px]" filled name={icon} /></span>
+        <span className="min-w-0 truncate text-[23px] font-bold tracking-[-0.035em] text-[#f5f7fb]">{value}</span>
       </div>
-      <p className="mt-3 text-[9px] font-semibold uppercase tracking-[0.08em] text-[#7f899d]">{label}</p>
-      <p className="mt-1.5 text-[8px] text-[#778196]">{detail}</p>
-      <div className="mt-auto rounded-lg border border-[#252b38] bg-[#10141d] px-2.5 py-2">{visual}</div>
+      <p className="mt-3 truncate text-[9px] font-semibold uppercase tracking-[0.08em] text-[#7f899d]">{label}</p>
+      <p className="mt-1.5 truncate text-[8px] text-[#778196]">{detail}</p>
+      <div className="mt-auto min-w-0 overflow-hidden rounded-lg border border-[#252b38] bg-[#10141d] px-2.5 py-2">{visual}</div>
     </article>
   );
 }

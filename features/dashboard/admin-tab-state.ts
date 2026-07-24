@@ -6,7 +6,7 @@ export function resolveAdminTab(value: string | null | undefined): AdminTab {
 }
 
 export function tabNeedsDashboardData(tab: AdminTab) {
-  return tab === "overview" || tab === "member" || tab === "activity" || tab === "setting";
+  return tab === "overview" || tab === "member" || tab === "activity";
 }
 
 export function addVisitedTab(visited: ReadonlySet<AdminTab>, tab: AdminTab): ReadonlySet<AdminTab> {

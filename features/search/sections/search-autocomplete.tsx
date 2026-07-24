@@ -17,9 +17,13 @@ import { MaterialIcon } from "@/shared/ui/icons/material-icon";
 
 type SearchAutocompleteProps = {
   className?: string;
+  resultLimit?: number;
 };
 
-export function SearchAutocomplete({ className }: SearchAutocompleteProps) {
+export function SearchAutocomplete({
+  className,
+  resultLimit = Number.POSITIVE_INFINITY
+}: SearchAutocompleteProps) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const indexPromiseRef = useRef<Promise<BrowserSearchItem[]> | null>(null);
@@ -163,7 +167,7 @@ export function SearchAutocomplete({ className }: SearchAutocompleteProps) {
           ) : (
             <>
               <div className="max-h-[520px] overflow-y-auto bg-[#181820]">
-                {results.map((result) => (
+                {results.slice(0, resultLimit).map((result) => (
                   <Link
                     key={result.id}
                     href={result.href}

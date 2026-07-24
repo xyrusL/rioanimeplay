@@ -5,28 +5,17 @@ import path from "node:path";
 
 import { toAnimeSlug } from "@/entities/anime/lib/slug";
 import { DEFAULT_ADMIN_APPEARANCE, normalizeAdminAppearance, type AdminAppearance } from "@/shared/lib/admin-appearance";
+import {
+  isFontPreset,
+  isThemePreset,
+  type FontPreset,
+  type ThemePreset
+} from "@/shared/lib/appearance-presets";
 
-export const THEME_PRESETS = [
-  "dark-purple",
-  "dark-rose",
-  "dark-strawberry",
-  "dark-chocolate",
-  "dark-amber",
-  "dark-pink",
-  "dark-neon",
-  "dark-midnight"
-] as const;
-
-export const FONT_PRESETS = [
-  "lexend-default",
-  "outfit-manrope",
-  "sora-nunito"
-] as const;
+export { FONT_PRESETS, THEME_PRESETS } from "@/shared/lib/appearance-presets";
+export type { FontPreset, ThemePreset } from "@/shared/lib/appearance-presets";
 
 export const ANIME_RULE_STATUSES = ["public", "locked", "private"] as const;
-
-export type ThemePreset = (typeof THEME_PRESETS)[number];
-export type FontPreset = (typeof FONT_PRESETS)[number];
 export type AnimeRuleStatus = (typeof ANIME_RULE_STATUSES)[number];
 
 export type SiteAnnouncementSettings = {
@@ -75,14 +64,6 @@ const DEFAULT_SITE_SETTINGS: SiteSettings = {
   animeRules: [],
   adminAppearance: DEFAULT_ADMIN_APPEARANCE
 };
-
-function isThemePreset(value: string): value is ThemePreset {
-  return THEME_PRESETS.includes(value as ThemePreset);
-}
-
-function isFontPreset(value: string): value is FontPreset {
-  return FONT_PRESETS.includes(value as FontPreset);
-}
 
 function isAnimeRuleStatus(value: string): value is Exclude<AnimeRuleStatus, "public"> {
   return value === "locked" || value === "private";

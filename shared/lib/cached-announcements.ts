@@ -7,6 +7,8 @@ export type PublicAnnouncement = {
   title: string;
   message: string;
   occurrence?: string;
+  kind?: "video_ads";
+  repeat?: "always";
 };
 
 function isAnnouncement(value: unknown): value is PublicAnnouncement {
@@ -15,7 +17,9 @@ function isAnnouncement(value: unknown): value is PublicAnnouncement {
   return typeof item.id === "string"
     && typeof item.title === "string"
     && typeof item.message === "string"
-    && (item.occurrence === undefined || typeof item.occurrence === "string");
+    && (item.occurrence === undefined || typeof item.occurrence === "string")
+    && (item.kind === undefined || item.kind === "video_ads")
+    && (item.repeat === undefined || item.repeat === "always");
 }
 
 export async function loadCachedAnnouncements(params: URLSearchParams) {

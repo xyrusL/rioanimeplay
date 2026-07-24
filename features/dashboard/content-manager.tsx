@@ -155,6 +155,12 @@ export function ContentManager() {
     return () => controller.abort();
   }, [page, filter, deferredSearch, refresh]);
 
+  useEffect(() => {
+    const refreshContent = () => setRefresh((value) => value + 1);
+    window.addEventListener("rioanime:content-change", refreshContent);
+    return () => window.removeEventListener("rioanime:content-change", refreshContent);
+  }, []);
+
   function chooseFilter(value: (typeof filters)[number]) {
     setFilter(value);
     setPage(1);
@@ -168,6 +174,7 @@ export function ContentManager() {
       if (!response.ok) throw new Error(await responseError(response));
       if (closeEditor) setEditing(null);
       setRefresh((value) => value + 1);
+      window.dispatchEvent(new CustomEvent("rioanime:content-change"));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Content could not be updated");
     } finally {

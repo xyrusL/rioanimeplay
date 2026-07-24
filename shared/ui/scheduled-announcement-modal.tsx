@@ -4,18 +4,22 @@ import { useEffect, useState } from "react";
 
 import { loadCachedAnnouncements, type PublicAnnouncement } from "@/shared/lib/cached-announcements";
 import { AnimatedModal } from "@/shared/ui/animated-modal";
+import { useAgeGate } from "@/shared/ui/age-gate-provider";
 import { MaterialIcon } from "@/shared/ui/icons/material-icon";
 
 type ScheduledAnnouncementModalProps = {
   placement: "home_modal" | "post_modal";
   animeId?: string;
+  waitForAdultConfirmation?: boolean;
 };
 
 export function ScheduledAnnouncementModal({
   placement,
-  animeId
+  animeId,
+  waitForAdultConfirmation = false
 }: ScheduledAnnouncementModalProps) {
-  const [item, setItem] = useState<PublicAnnouncement | null>(null);
+  const [queue, setQueue] = useState<PublicAnnouncement[]>([]);
+  const { ready: ageGateReady, confirmed: adultConfirmed } = useAgeGate();
 
   useEffect(() => {
     const params = new URLSearchParams({ placement });
@@ -24,20 +28,21 @@ export function ScheduledAnnouncementModal({
     let active = true;
     void loadCachedAnnouncements(params)
       .then(({ data }) => {
-        const next = data[0] ?? null;
-        if (!active || !next || localStorage.getItem(`notification:${next.id}:${next.occurrence ?? "once"}`)) return;
-        setItem(next);
+        if (!active) return;
+        setQueue(data.filter((next) => next.repeat === "always" || !localStorage.getItem(`notification:${next.id}:${next.occurrence ?? "once"}`)));
       })
       .catch(() => undefined);
 
     return () => { active = false; };
   }, [animeId, placement]);
 
+  const item = !waitForAdultConfirmation || (ageGateReady && adultConfirmed) ? queue[0] ?? null : null;
+
   function close() {
-    if (item) {
+    if (item && item.repeat !== "always") {
       localStorage.setItem(`notification:${item.id}:${item.occurrence ?? "once"}`, "dismissed");
     }
-    setItem(null);
+    setQueue((current) => current.slice(1));
   }
 
   return (
@@ -54,17 +59,17 @@ export function ScheduledAnnouncementModal({
 
         <header className="relative flex items-start gap-3.5 pr-11">
           <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[16px] bg-[linear-gradient(145deg,#ef56ad_0%,#9b45f3_48%,#5d55ff_100%)] text-white shadow-[0_12px_28px_rgba(139,68,244,0.34)]">
-            <MaterialIcon className="text-[27px]" filled name="notifications_active" />
+            <MaterialIcon className="text-[27px]" filled name={item?.kind === "video_ads" ? "ads_click" : "notifications_active"} />
           </span>
           <div className="min-w-0 pt-0.5 sm:pt-1">
             <h2
               id="scheduled-announcement-title"
               className="text-[1.3rem] leading-tight font-bold text-white"
             >
-              Hello there! <span aria-hidden="true">👋</span>
+              {item?.kind === "video_ads" ? "Before you watch" : <>Hello there! <span aria-hidden="true">👋</span></>}
             </h2>
             <p className="mt-1.5 text-sm leading-5 text-[rgba(229,225,240,0.7)]">
-              We&apos;ve got an update to share with you.
+              {item?.kind === "video_ads" ? "A quick note about this video player." : "We've got an update to share with you."}
             </p>
           </div>
         </header>
@@ -89,7 +94,7 @@ export function ScheduledAnnouncementModal({
                   {item?.title}
                 </h3>
                 <span className="shrink-0 rounded-lg bg-[linear-gradient(135deg,#a23ee4,#6b43d7)] px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.14em] text-white shadow-[0_8px_22px_rgba(117,57,209,0.3)]">
-                  New
+                  {item?.kind === "video_ads" ? "Notice" : "New"}
                 </span>
               </div>
               <p className="mt-1.5 whitespace-pre-wrap text-sm leading-5 text-[rgba(229,225,240,0.72)]">

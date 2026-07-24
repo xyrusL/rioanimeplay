@@ -47,6 +47,6 @@ export default async function WatchPage({ params }: WatchPageProps) {
       initialIsMobile={initialIsMobile}
       mobile={<MobileWatchScreen anime={result.anime} />}
       desktop={<WatchScreen anime={result.anime} />}
-    /><ScheduledAnnouncementModal placement="post_modal" animeId={result.anime.libraryId} /></>
+    /><ScheduledAnnouncementModal placement="post_modal" animeId={result.anime.libraryId} waitForAdultConfirmation={result.anime.isNsfw} /></>
   );
 }

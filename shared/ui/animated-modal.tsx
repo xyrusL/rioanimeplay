@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 
 import { MOTION_VARIANTS } from "@/shared/lib/motion";
@@ -33,7 +34,11 @@ export function AnimatedModal({
       ? "items-end"
       : "items-center";
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  const portalRoot = document.querySelector<HTMLElement>(".admin-shell") ?? document.body;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen ? (
         <motion.div
@@ -61,6 +66,7 @@ export function AnimatedModal({
           </motion.div>
         </motion.div>
       ) : null}
-    </AnimatePresence>
+    </AnimatePresence>,
+    portalRoot
   );
 }

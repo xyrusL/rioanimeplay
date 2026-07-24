@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const workerModule = await import("../../worker.js");
+const platformStatusSource = await readFile(new URL("./platform-status.tsx", import.meta.url), "utf8");
 const dashboardSource = await readFile(new URL("./admin-dashboard.tsx", import.meta.url), "utf8");
 
 test("dashboard route metrics include every configured route even without recent traffic", () => {
@@ -15,13 +16,22 @@ test("dashboard route metrics include every configured route even without recent
   assert.ok(metrics.every((metric) => metric.requests === 0 && metric.errors === 0));
 });
 
-test("platform status renders the tracked route list", () => {
+test("platform status lives in overview and renders route metrics as a chart", () => {
   const settingsPanel = dashboardSource.slice(
     dashboardSource.indexOf("function SettingsPanel"),
     dashboardSource.indexOf("function RetainedPanel")
   );
 
-  assert.match(settingsPanel, /routeMetrics\.map/);
-  assert.match(settingsPanel, /metric\.route/);
-  assert.match(settingsPanel, /metric\.requests/);
+  assert.doesNotMatch(settingsPanel, /Platform status/);
+  const overviewPanel = dashboardSource.slice(
+    dashboardSource.indexOf("function Overview"),
+    dashboardSource.indexOf("function RecentContent")
+  );
+
+  assert.match(overviewPanel, /<PlatformStatus data=\{data\}/);
+  assert.doesNotMatch(dashboardSource, /activeTab === "status"[^\n]*PlatformStatus/);
+  assert.match(platformStatusSource, /<BarChart/);
+  assert.match(platformStatusSource, /routeMetrics/);
+  assert.match(platformStatusSource, /metric\.route/);
+  assert.match(platformStatusSource, /metric\.requests/);
 });

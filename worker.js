@@ -20,6 +20,19 @@ const PUBLIC_ANIME_PREDICATE = `
   AND visibility = 'public' AND deleted_at IS NULL
 `;
 
+const CONTENT_NOTICE_TEMPLATES = {
+  nsfw: {
+    title: "Mature content warning",
+    message: "This anime may contain adult themes, nudity, or other sensitive material.",
+    column: "is_nsfw"
+  },
+  video_ads: {
+    title: "Video contains advertising",
+    message: "The video player for this anime may show third-party advertising.",
+    column: "has_video_ads"
+  }
+};
+
 export const TRACKED_API_ROUTES = [
   "/v1/health",
   "/v1/dashboard",
@@ -357,7 +370,21 @@ async function handlePublicAnnouncements(request, env, origin, ctx) {
     const localNow = `datetime('now', printf('%+d minutes', -n.timezone_offset))`;
     const eligible = `n.status IN ('Scheduled','Active') AND (n.starts_at IS NULL OR datetime(n.starts_at) <= datetime('now')) AND (n.ends_at IS NULL OR datetime(n.ends_at) > datetime('now')) AND (n.recurrence = 'none' OR (instr(',' || n.weekdays || ',', ',' || strftime('%w', ${localNow}) || ',') > 0 AND time(${localNow}) >= n.display_time))`;
     const order = animeId ? "CASE WHEN n.location = 'selected_posts' THEN 0 ELSE 1 END, n.updated_at DESC" : "n.updated_at DESC";
-    return cachedJson(request, origin, ctx, 30, async () => { const row = animeId ? await env.DB.prepare(`${notificationSelect} WHERE ${target} AND ${eligible} ORDER BY ${order} LIMIT 1`).bind(animeId).first() : await env.DB.prepare(`${notificationSelect} WHERE ${target} AND ${eligible} ORDER BY ${order} LIMIT 1`).first(); if (!row) return { items: [] }; const item = customNotificationItem(row); const local = new Date(Date.now() - item.timezoneOffset * 60000); item.occurrence = item.recurrence === "weekly" ? `${local.toISOString().slice(0, 10)}T${item.displayTime}` : (item.startsAt ?? item.createdAt); return { items: [item] }; }, `custom-notification:${animeId ?? "homepage"}`);
+    return cachedJson(request, origin, ctx, 30, async () => {
+      const row = animeId ? await env.DB.prepare(`${notificationSelect} WHERE ${target} AND ${eligible} ORDER BY ${order} LIMIT 1`).bind(animeId).first() : await env.DB.prepare(`${notificationSelect} WHERE ${target} AND ${eligible} ORDER BY ${order} LIMIT 1`).first();
+      const items = [];
+      if (animeId) {
+        const anime = await env.DB.prepare("SELECT has_video_ads FROM anime WHERE anime_id = ?1 AND deleted_at IS NULL LIMIT 1").bind(animeId).first();
+        if (anime?.has_video_ads) items.push({ id: "template-video-ads", kind: "video_ads", repeat: "always", title: CONTENT_NOTICE_TEMPLATES.video_ads.title, message: CONTENT_NOTICE_TEMPLATES.video_ads.message });
+      }
+      if (row) {
+        const item = customNotificationItem(row);
+        const local = new Date(Date.now() - item.timezoneOffset * 60000);
+        item.occurrence = item.recurrence === "weekly" ? `${local.toISOString().slice(0, 10)}T${item.displayTime}` : (item.startsAt ?? item.createdAt);
+        items.push(item);
+      }
+      return { items };
+    }, `custom-notification:${animeId ?? "homepage"}`);
   }
   const postPlacement = placement === "post_modal";
   if (postPlacement && !animeId) return json({ items: [] }, 200, origin, "private, max-age=30");
@@ -372,6 +399,49 @@ async function handlePublicAnnouncements(request, env, origin, ctx) {
     const rows = postPlacement ? await statement.bind(animeId, placement).all() : await statement.bind(placement).all();
     return { items: rows.results.map(announcementItem) };
   }, `announcement:${placement}:${animeId ?? "global"}`);
+}
+
+function contentNoticeTemplateItem(key, rows) {
+  const template = CONTENT_NOTICE_TEMPLATES[key];
+  return {
+    key,
+    title: template.title,
+    message: template.message,
+    anime: rows.map((row) => ({ animeId: row.anime_id, title: row.title, imageUrl: row.image_url }))
+  };
+}
+
+async function handleAdminContentNotices(request, env, origin, accountId, path) {
+  const key = path.startsWith("/v1/admin/content-notices/") ? decodeURIComponent(path.slice("/v1/admin/content-notices/".length)) : null;
+  if (request.method === "GET" && !key) {
+    const [nsfw, videoAds] = await env.DB.batch([
+      env.DB.prepare("SELECT anime_id, title, image_url FROM anime WHERE is_nsfw = 1 AND deleted_at IS NULL ORDER BY title COLLATE NOCASE"),
+      env.DB.prepare("SELECT anime_id, title, image_url FROM anime WHERE has_video_ads = 1 AND deleted_at IS NULL ORDER BY title COLLATE NOCASE")
+    ]);
+    return json({ templates: [contentNoticeTemplateItem("nsfw", nsfw.results), contentNoticeTemplateItem("video_ads", videoAds.results)] }, 200, origin);
+  }
+  if (request.method !== "PATCH" || !key) return error("METHOD_NOT_ALLOWED", "Method not allowed", 405, origin);
+  const template = CONTENT_NOTICE_TEMPLATES[key];
+  if (!template) return error("INVALID_CONTENT_NOTICE", "Unknown content notice template", 404, origin);
+  const parsed = await parseJsonBody(request, origin);
+  if (parsed.response) return parsed.response;
+  const animeIds = [...new Set(Array.isArray(parsed.data?.animeIds) ? parsed.data.animeIds.map(String).filter(isValidAnimeId) : [])];
+  if (animeIds.length > 500) return error("TOO_MANY_ANIME", "Select no more than 500 anime", 400, origin);
+  if (animeIds.length) {
+    const placeholders = animeIds.map((_, index) => `?${index + 1}`).join(",");
+    const found = await env.DB.prepare(`SELECT COUNT(*) AS total FROM anime WHERE anime_id IN (${placeholders}) AND deleted_at IS NULL`).bind(...animeIds).first();
+    if (Number(found?.total ?? 0) !== animeIds.length) return error("ANIME_NOT_FOUND", "A selected anime does not exist", 404, origin);
+  }
+  await env.DB.batch([
+    env.DB.prepare(`UPDATE anime SET ${template.column} = 0, edited_at = datetime('now'), edited_by = ?1, updated_at = datetime('now') WHERE deleted_at IS NULL AND ${template.column} <> 0`).bind(accountId),
+    ...animeIds.map((animeId) => env.DB.prepare(`UPDATE anime SET ${template.column} = 1, edited_at = datetime('now'), edited_by = ?1, updated_at = datetime('now') WHERE anime_id = ?2 AND deleted_at IS NULL`).bind(accountId, animeId))
+  ]);
+  await Promise.all([
+    incrementCatalogRevision(env),
+    incrementAnnouncementRevision(env),
+    writeContentActivity(env, "content_notice_updated", accountId, key, `${key} content notice updated for ${animeIds.length} anime`)
+  ]);
+  return json({ key, animeIds }, 200, origin);
 }
 
 async function handleAdminAnnouncements(request, env, origin, accountId, path) {
@@ -1614,12 +1684,13 @@ async function handleAdminAnalytics(request, env, origin) {
 async function routeAdminManagement(request, env, origin, path) {
   const accountId = request.headers.get("X-RioAnime-Admin-Id");
   if (path === "/v1/admin/profile") return handleAdminProfile(request, env, origin, accountId);
-  if (path === "/v1/admin/members" || path.startsWith("/v1/admin/members/") || path === "/v1/admin/analytics" || path === "/v1/admin/domain-lock" || path === "/v1/admin/content" || path.startsWith("/v1/admin/content/") || path === "/v1/admin/announcements" || path.startsWith("/v1/admin/announcements/")) {
+  if (path === "/v1/admin/members" || path.startsWith("/v1/admin/members/") || path === "/v1/admin/analytics" || path === "/v1/admin/domain-lock" || path === "/v1/admin/content" || path.startsWith("/v1/admin/content/") || path === "/v1/admin/content-notices" || path.startsWith("/v1/admin/content-notices/") || path === "/v1/admin/announcements" || path.startsWith("/v1/admin/announcements/")) {
     if (!(await getAdminAccount(env, accountId))) return error("UNAUTHORIZED", "Administrator session is no longer valid", 401, origin);
     if (path === "/v1/admin/members") return handleAdminMembers(request, env, origin);
     if (path.startsWith("/v1/admin/members/")) return handleAdminMemberDetail(request, env, origin, decodeURIComponent(path.slice("/v1/admin/members/".length)));
     if (path === "/v1/admin/analytics") return handleAdminAnalytics(request, env, origin);
     if (path === "/v1/admin/domain-lock") return handleAdminDomainLock(request, env, origin, accountId);
+    if (path === "/v1/admin/content-notices" || path.startsWith("/v1/admin/content-notices/")) return handleAdminContentNotices(request, env, origin, accountId, path);
     if (path === "/v1/admin/announcements" || path.startsWith("/v1/admin/announcements/")) return handleAdminAnnouncements(request, env, origin, accountId, path);
     return handleAdminContent(request, env, origin, accountId, path);
   }

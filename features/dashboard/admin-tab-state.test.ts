@@ -19,11 +19,11 @@ test("addVisitedTab retains previously visited panels", () => {
 });
 
 test("tabNeedsDashboardData only selects panels backed by the shared dashboard response", () => {
-  for (const tab of ["overview", "member", "activity", "setting"] as const) {
+  for (const tab of ["overview", "member", "activity"] as const) {
     assert.equal(tabNeedsDashboardData(tab), true, `${tab} should load dashboard data`);
   }
 
-  for (const tab of ["content", "api", "status"] as const) {
+  for (const tab of ["content", "api", "status", "setting"] as const) {
     assert.equal(tabNeedsDashboardData(tab), false, `${tab} should skip dashboard data`);
   }
 });
