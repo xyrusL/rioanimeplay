@@ -60,18 +60,18 @@ function normalizeOrigin(origin) {
   }
 }
 
-async function isAllowedOrigin(env, origin) {
+async function isAllowedOrigin(env, keyId, origin) {
   if (!origin) return true;
   const normalized = normalizeOrigin(origin);
   if (!normalized) return false;
   try {
-    const setting = await env.DB.prepare("SELECT enabled FROM domain_lock_settings WHERE id = 1").first();
+    const setting = await env.DB.prepare("SELECT enabled FROM api_key_domain_settings WHERE key_id = ?1").bind(keyId).first();
     if (!setting || Number(setting.enabled) === 0) return true;
-    const allowed = await env.DB.prepare("SELECT 1 AS allowed FROM allowed_domains WHERE origin = ?1 LIMIT 1").bind(normalized).first();
+    const allowed = await env.DB.prepare("SELECT 1 AS allowed FROM api_key_allowed_domains WHERE key_id = ?1 AND origin = ?2 LIMIT 1").bind(keyId, normalized).first();
     return Boolean(allowed);
   } catch (cause) {
     console.error("RioAnime domain lock lookup failed", cause);
-    return FALLBACK_ALLOWED_ORIGINS.has(normalized);
+    return keyId === "site-deployment-key" && FALLBACK_ALLOWED_ORIGINS.has(normalized);
   }
 }
 
@@ -707,11 +707,13 @@ async function writeKeyActivity(env, eventType, keyId, summary) {
 }
 
 async function listApiKeys(env, origin) {
-  const [rows, siteMetrics, systemPolicy, domainPolicy] = await env.DB.batch([
+  const [rows, siteMetrics, systemPolicy, siteDomainPolicy] = await env.DB.batch([
     env.DB.prepare(
       `SELECT k.id, k.name, k.key_prefix, k.key_hint, k.status, k.created_at, k.updated_at, k.last_used_at,
-              k.rate_limit_per_minute, k.daily_request_limit, k.daily_bandwidth_limit_bytes,
-              COALESCE(SUM(m.request_count), 0) AS request_count,
+               k.rate_limit_per_minute, k.daily_request_limit, k.daily_bandwidth_limit_bytes,
+               COALESCE((SELECT enabled FROM api_key_domain_settings d WHERE d.key_id = k.id), 0) AS domain_lock_enabled,
+               (SELECT group_concat(origin, '|') FROM api_key_allowed_domains a WHERE a.key_id = k.id) AS domain_origins,
+               COALESCE(SUM(m.request_count), 0) AS request_count,
               COALESCE(SUM(m.error_count), 0) AS error_count,
               COALESCE(SUM(m.total_duration_ms), 0) AS total_duration_ms,
               COALESCE(MAX(m.max_duration_ms), 0) AS max_duration_ms
@@ -729,7 +731,7 @@ async function listApiKeys(env, origin) {
        FROM request_metrics_hourly WHERE bucket_at >= strftime('%Y-%m-%dT%H:00:00Z', 'now', '-30 days')`
     ),
     env.DB.prepare("SELECT name, status, rate_limit_per_minute, daily_request_limit, daily_bandwidth_limit_bytes, updated_at FROM system_api_key_policy WHERE id = 'site-deployment-key'"),
-    env.DB.prepare("SELECT enabled, (SELECT group_concat(origin, '|') FROM allowed_domains) AS origins FROM domain_lock_settings WHERE id = 1")
+    env.DB.prepare("SELECT enabled, (SELECT group_concat(origin, '|') FROM api_key_allowed_domains WHERE key_id = 'site-deployment-key') AS origins FROM api_key_domain_settings WHERE key_id = 'site-deployment-key'")
   ]);
 
   const keys = rows.results.map((row) => {
@@ -746,6 +748,10 @@ async function listApiKeys(env, origin) {
       lastUsedAt: row.last_used_at,
       isSiteKey: false,
       managed: true,
+      domainLock: {
+        enabled: Boolean(row.domain_lock_enabled),
+        origins: typeof row.domain_origins === "string" && row.domain_origins ? row.domain_origins.split("|") : []
+      },
       policy: {
         rateLimitPerMinute: row.rate_limit_per_minute === null ? null : Number(row.rate_limit_per_minute),
         dailyRequestLimit: row.daily_request_limit === null ? null : Number(row.daily_request_limit),
@@ -763,7 +769,7 @@ async function listApiKeys(env, origin) {
   });
   const site = siteMetrics.results[0] ?? {};
   const sitePolicy = systemPolicy.results[0] ?? {};
-  const domainLock = domainPolicy.results[0] ?? {};
+  const domainLock = siteDomainPolicy.results[0] ?? {};
   const siteRequests = Number(site.request_count ?? 0);
   const siteErrors = Number(site.error_count ?? 0);
   keys.unshift({
@@ -808,10 +814,13 @@ async function createManagedApiKey(request, env, origin) {
 
   const id = createId();
   const key = createApiKey();
-  await env.DB.prepare(
-    `INSERT INTO api_keys (id, name, key_prefix, key_hint, key_hash)
-     VALUES (?1, ?2, ?3, ?4, ?5)`
-  ).bind(id, name, key.slice(0, 13), keyHint(key), await hashKey(key)).run();
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO api_keys (id, name, key_prefix, key_hint, key_hash)
+       VALUES (?1, ?2, ?3, ?4, ?5)`
+    ).bind(id, name, key.slice(0, 13), keyHint(key), await hashKey(key)),
+    env.DB.prepare("INSERT INTO api_key_domain_settings (key_id, enabled) VALUES (?1, 0)").bind(id)
+  ]);
   await writeKeyActivity(env, "api_key.created", id, `API key created: ${name}`);
   return json({ id, name, key, keyHint: keyHint(key), status: "active" }, 201, origin);
 }
@@ -886,10 +895,54 @@ async function deleteManagedApiKey(env, origin, id) {
   if (!existing) return error("NOT_FOUND", "API key not found", 404, origin);
   await env.DB.batch([
     env.DB.prepare("DELETE FROM api_key_metrics_hourly WHERE key_id = ?1").bind(id),
+    env.DB.prepare("DELETE FROM api_key_allowed_domains WHERE key_id = ?1").bind(id),
+    env.DB.prepare("DELETE FROM api_key_domain_settings WHERE key_id = ?1").bind(id),
     env.DB.prepare("DELETE FROM api_keys WHERE id = ?1").bind(id)
   ]);
   await writeKeyActivity(env, "api_key.deleted", id, `API key deleted: ${existing.name}`);
   return new Response(null, { status: 204, headers: responseHeaders(origin) });
+}
+
+async function handleApiKeyDomainLock(request, env, origin, id) {
+  const exists = id === "site-deployment-key"
+    ? await env.DB.prepare("SELECT id FROM system_api_key_policy WHERE id = ?1").bind(id).first()
+    : await env.DB.prepare("SELECT id FROM api_keys WHERE id = ?1").bind(id).first();
+  if (!exists) return error("NOT_FOUND", "API key not found", 404, origin);
+
+  if (request.method === "GET") {
+    const [setting, domains] = await env.DB.batch([
+      env.DB.prepare("SELECT enabled, updated_at FROM api_key_domain_settings WHERE key_id = ?1").bind(id),
+      env.DB.prepare("SELECT origin, created_at FROM api_key_allowed_domains WHERE key_id = ?1 ORDER BY origin ASC").bind(id)
+    ]);
+    return json({
+      enabled: Boolean(setting.results[0]?.enabled),
+      updatedAt: setting.results[0]?.updated_at ?? null,
+      domains: domains.results.map((row) => ({ origin: row.origin, createdAt: row.created_at }))
+    }, 200, origin);
+  }
+  if (request.method !== "PATCH") return error("METHOD_NOT_ALLOWED", "Method not allowed", 405, origin);
+
+  const parsed = await parseJsonBody(request, origin);
+  if (parsed.response) return parsed.response;
+  const enabled = parsed.data?.enabled === true;
+  if (!Array.isArray(parsed.data?.domains) || parsed.data.domains.length > 20) {
+    return error("INVALID_DOMAINS", "Provide no more than 20 allowed domains", 400, origin);
+  }
+  const domains = [...new Set(parsed.data.domains.map(normalizeOrigin))];
+  if (domains.includes(null) || (enabled && domains.length === 0)) {
+    return error("INVALID_DOMAINS", "Each domain must be a valid HTTP or HTTPS origin", 400, origin);
+  }
+
+  await env.DB.batch([
+    env.DB.prepare("DELETE FROM api_key_allowed_domains WHERE key_id = ?1").bind(id),
+    ...domains.map((domain) => env.DB.prepare("INSERT INTO api_key_allowed_domains (key_id, origin) VALUES (?1, ?2)").bind(id, domain)),
+    env.DB.prepare(
+      `INSERT INTO api_key_domain_settings (key_id, enabled, updated_at) VALUES (?1, ?2, datetime('now'))
+       ON CONFLICT(key_id) DO UPDATE SET enabled = excluded.enabled, updated_at = excluded.updated_at`
+    ).bind(id, enabled ? 1 : 0)
+  ]);
+  await writeKeyActivity(env, "api_key.domain_lock_updated", id, `Domain lock ${enabled ? "enabled" : "disabled"} with ${domains.length} allowed origins`);
+  return json({ enabled, domains: domains.map((domain) => ({ origin: domain })) }, 200, origin);
 }
 
 async function routeApiKeyManagement(request, env, origin, path) {
@@ -898,6 +951,8 @@ async function routeApiKeyManagement(request, env, origin, path) {
     if (request.method === "POST") return createManagedApiKey(request, env, origin);
     return error("METHOD_NOT_ALLOWED", "Method not allowed", 405, origin);
   }
+  const domainLockMatch = path.match(/^\/v1\/api-keys\/([a-z0-9-]+)\/domain-lock$/i);
+  if (domainLockMatch) return handleApiKeyDomainLock(request, env, origin, domainLockMatch[1]);
   const match = path.match(/^\/v1\/api-keys\/([a-z0-9-]+)$/i);
   if (!match) return error("NOT_FOUND", "Route not found", 404, origin);
   if (request.method === "PATCH") return updateManagedApiKey(request, env, origin, match[1]);
@@ -2085,10 +2140,9 @@ const worker = {
 
   async fetch(request, env, ctx) {
     const origin = request.headers.get("Origin");
-    if (!(await isAllowedOrigin(env, origin))) return new Response(null, { status: 404 });
 
     if (request.method === "OPTIONS") {
-      if (!origin) return new Response(null, { status: 404 });
+      if (!normalizeOrigin(origin)) return new Response(null, { status: 404 });
       const headers = responseHeaders(origin);
       headers.set("Access-Control-Allow-Headers", "Content-Type, X-RioAnime-Key");
       headers.set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
@@ -2100,6 +2154,7 @@ const worker = {
     const providedKey = request.headers.get("X-RioAnime-Key");
     if (path === "/v1/user/sync" || path === "/v1/user/library") {
       if (!(await keysMatch(providedKey, env.API_KEY))) return new Response(null, { status: 404 });
+      if (!(await isAllowedOrigin(env, "site-deployment-key", origin))) return new Response(null, { status: 404 });
       try {
         return path === "/v1/user/sync"
           ? await handleUserSync(request, env, origin)
@@ -2111,6 +2166,7 @@ const worker = {
     }
     if (path === "/v1/api-keys" || path.startsWith("/v1/api-keys/") || path.startsWith("/v1/admin/")) {
       if (!(await keysMatch(providedKey, env.API_KEY))) return new Response(null, { status: 404 });
+      if (!(await isAllowedOrigin(env, "site-deployment-key", origin))) return new Response(null, { status: 404 });
       try {
         return path.startsWith("/v1/admin/")
           ? await routeAdminManagement(request, env, origin, path)
@@ -2125,6 +2181,7 @@ const worker = {
     if (!authenticatedKey) {
       return new Response(null, { status: 404 });
     }
+    if (!(await isAllowedOrigin(env, authenticatedKey.id, origin))) return new Response(null, { status: 404 });
 
     const policyResponse = await enforceApiKeyPolicy(env, authenticatedKey, origin);
     if (policyResponse) return policyResponse;

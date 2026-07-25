@@ -2,8 +2,10 @@
 
 import { FormEvent, startTransition, useEffect, useState } from "react";
 
-import { DomainLockSettings } from "@/features/dashboard/domain-lock-settings";
+import { DomainLockDialog } from "@/features/dashboard/domain-lock-settings";
 import { MaterialIcon } from "@/shared/ui/icons/material-icon";
+
+type DomainLock = { enabled: boolean; origins: string[] };
 
 type ApiKey = {
   id: string;
@@ -16,7 +18,7 @@ type ApiKey = {
   lastUsedAt: string | null;
   isSiteKey: boolean;
   managed: boolean;
-  domainLock?: { enabled: boolean; origins: string[] };
+  domainLock?: DomainLock;
   policy: {
     rateLimitPerMinute: number | null;
     dailyRequestLimit: number | null;
@@ -45,11 +47,12 @@ async function readError(response: Response) {
 
 function Metric({ icon, label, value, detail, tone }: { icon: string; label: string; value: string; detail: string; tone: string }) {
   return (
-    <article className="rounded-2xl border border-[#292e3c] bg-[#151923] p-5 shadow-[0_14px_35px_rgba(0,0,0,0.18)]">
-      <span className={`grid h-9 w-9 place-items-center rounded-lg ${tone}`}><MaterialIcon className="text-[18px]" filled name={icon} /></span>
-      <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#7f899d]">{label}</p>
-      <p className="mt-1.5 text-[26px] font-bold tracking-[-0.035em] text-[#f5f7fb]">{value}</p>
-      <p className="mt-2 text-[10px] text-[#778196]">{detail}</p>
+    <article className="flex items-center gap-3 rounded-xl border border-[#292e3c] bg-[#151923] p-3 shadow-[0_10px_24px_rgba(0,0,0,0.14)]">
+      <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${tone}`}><MaterialIcon className="text-[16px]" filled name={icon} /></span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-2"><p className="truncate text-[9px] font-semibold uppercase tracking-[0.08em] text-[#7f899d]">{label}</p><p className="shrink-0 text-lg font-bold leading-none tracking-[-0.025em] text-[#f5f7fb]">{value}</p></div>
+        <p className="mt-1 truncate text-[9px] text-[#778196]">{detail}</p>
+      </div>
     </article>
   );
 }
@@ -116,13 +119,20 @@ export function ApiKeyManager() {
   const [bandwidthMb, setBandwidthMb] = useState("");
   const [secret, setSecret] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
+  const [domainLockKey, setDomainLockKey] = useState<(ApiKey & { domainLock: DomainLock }) | null>(null);
 
   async function load() {
     setError("");
     const response = await fetch("/api/dashboard/api-keys", { cache: "no-store" });
     if (!response.ok) throw new Error(await readError(response));
     const result = await response.json() as KeysResponse;
-    startTransition(() => setData(result));
+    startTransition(() => setData({
+      ...result,
+      keys: result.keys.map((key) => ({
+        ...key,
+        domainLock: key.domainLock ?? { enabled: false, origins: [] }
+      }))
+    }));
   }
 
   useEffect(() => {
@@ -216,6 +226,7 @@ export function ApiKeyManager() {
     <>
       {secret && <SecretDialog secret={secret} onClose={() => setSecret(null)} />}
       {confirmation && <ConfirmDialog confirmation={confirmation} busy={busyId === confirmation.key.id} onCancel={() => setConfirmation(null)} onConfirm={confirmAction} />}
+      {domainLockKey && <DomainLockDialog apiKey={domainLockKey} onClose={() => setDomainLockKey(null)} onSaved={(domainLock) => { setData((current) => ({ ...current, keys: current.keys.map((key) => key.id === domainLockKey.id ? { ...key, domainLock } : key) })); setDomainLockKey(null); }} />}
       <section className="mb-5 flex flex-col gap-3 rounded-2xl border border-[#2d395e] bg-[#151b2b] p-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#202a4c] text-[#9cafff]"><MaterialIcon className="text-[20px]" name="hub" /></span><div><h2 className="text-sm font-bold text-[#eef1f6]">Site API credentials</h2><p className="mt-1 text-[10px] leading-5 text-[#8994a8]">Active keys can access the site API. Add, rename, pause, replace, or delete managed credentials below.</p></div></div>
         <span className="w-fit rounded-full bg-[#15352c] px-3 py-1.5 text-[9px] font-bold text-[#70d5ad]">{data.keys.filter((key) => key.status === "active").length} active</span>
@@ -250,13 +261,12 @@ export function ApiKeyManager() {
                 ["Speed", key.usage.averageResponseMs === null ? "—" : `${key.usage.averageResponseMs}ms`]
               ].map(([label, value]) => <div key={label} className="rounded-xl bg-[#10141d] px-3 py-2.5"><p className="text-[9px] font-semibold text-[#707a8e]">{label}</p><p className="mt-1 text-xs font-bold text-[#d7dce5]">{value}</p></div>)}</div>
             </div>
-            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-[#252a37] pt-4 text-[9px] text-[#7f899d]"><span>Rate: <strong className="text-[#b8c0cf]">{key.policy.rateLimitPerMinute === null ? "Unlimited" : `${number.format(key.policy.rateLimitPerMinute)}/min`}</strong></span><span>Daily requests: <strong className="text-[#b8c0cf]">{key.policy.dailyRequestLimit === null ? "Unlimited" : number.format(key.policy.dailyRequestLimit)}</strong></span><span>Daily bandwidth: <strong className="text-[#b8c0cf]">{key.policy.dailyBandwidthLimitBytes === null ? "Unlimited" : `${number.format(key.policy.dailyBandwidthLimitBytes / 1048576)} MB`}</strong></span>{key.domainLock ? <span>Domain lock: <strong className={key.domainLock.enabled ? "text-[#70d5ad]" : "text-[#efbd68]"}>{key.domainLock.enabled ? `${key.domainLock.origins.length} origins` : "Disabled"}</strong></span> : null}</div>
+            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-[#252a37] pt-4 text-[9px] text-[#7f899d]"><span>Rate: <strong className="text-[#b8c0cf]">{key.policy.rateLimitPerMinute === null ? "Unlimited" : `${number.format(key.policy.rateLimitPerMinute)}/min`}</strong></span><span>Daily requests: <strong className="text-[#b8c0cf]">{key.policy.dailyRequestLimit === null ? "Unlimited" : number.format(key.policy.dailyRequestLimit)}</strong></span><span>Daily bandwidth: <strong className="text-[#b8c0cf]">{key.policy.dailyBandwidthLimitBytes === null ? "Unlimited" : `${number.format(key.policy.dailyBandwidthLimitBytes / 1048576)} MB`}</strong></span><span>Domain lock: <strong className={(key.domainLock?.enabled ?? false) ? "text-[#70d5ad]" : "text-[#efbd68]"}>{key.domainLock?.enabled ? `${key.domainLock.origins.length} origins` : "Disabled"}</strong></span></div>
             {editingPolicyId === key.id ? <form onSubmit={(event) => savePolicy(event, key)} className="mt-4 grid gap-3 rounded-xl border border-[#2d395e] bg-[#111725] p-4 sm:grid-cols-3"><label className="text-[9px] font-bold uppercase tracking-[0.08em] text-[#8994a8]">Requests per minute<input type="number" min="1" max="10000" value={rateLimit} onChange={(event) => setRateLimit(event.target.value)} placeholder="Unlimited" className="mt-2 h-10 w-full rounded-lg border border-[#343a4a] bg-[#0e121a] px-3 text-xs text-[#e3e7ef] outline-none focus:border-[#7184e8]" /></label><label className="text-[9px] font-bold uppercase tracking-[0.08em] text-[#8994a8]">Requests per day<input type="number" min="1" max="100000000" value={dailyLimit} onChange={(event) => setDailyLimit(event.target.value)} placeholder="Unlimited" className="mt-2 h-10 w-full rounded-lg border border-[#343a4a] bg-[#0e121a] px-3 text-xs text-[#e3e7ef] outline-none focus:border-[#7184e8]" /></label><label className="text-[9px] font-bold uppercase tracking-[0.08em] text-[#8994a8]">Bandwidth MB per day<input type="number" min="1" max="1048576" value={bandwidthMb} onChange={(event) => setBandwidthMb(event.target.value)} placeholder="Unlimited" className="mt-2 h-10 w-full rounded-lg border border-[#343a4a] bg-[#0e121a] px-3 text-xs text-[#e3e7ef] outline-none focus:border-[#7184e8]" /></label><div className="flex gap-2 sm:col-span-3"><button disabled={busyId === key.id} className="rounded-lg bg-[#596fe5] px-4 py-2.5 text-[10px] font-bold text-white disabled:opacity-50" type="submit">Save limits</button><button onClick={() => setEditingPolicyId(null)} className="rounded-lg px-4 py-2.5 text-[10px] font-bold text-[#9da7b9]" type="button">Cancel</button><span className="self-center text-[9px] text-[#697386]">Leave a field blank for Unlimited.</span></div></form> : null}
-            <div className="mt-3 flex flex-wrap gap-2"><button onClick={() => { setEditingId(key.id); setEditingName(key.name); }} className="action-button" type="button"><MaterialIcon name="edit" />Rename</button><button onClick={() => editPolicy(key)} className="action-button" type="button"><MaterialIcon name="tune" />Edit limits</button>{key.isSiteKey ? <button onClick={() => document.getElementById("domain-lock")?.scrollIntoView({ behavior: "smooth", block: "start" })} className="action-button" type="button"><MaterialIcon name="domain_verification" />Domain lock</button> : null}<button onClick={() => updateKey(key, key.status === "active" ? "pause" : "resume")} className="action-button" type="button"><MaterialIcon name={key.status === "active" ? "pause" : "play_arrow"} />{key.status === "active" ? "Pause" : "Resume"}</button>{key.managed ? <button onClick={() => setConfirmation({ key, action: "regenerate" })} className="action-button" type="button"><MaterialIcon name="sync_lock" />Replace key</button> : null}<button onClick={() => setConfirmation({ key, action: "delete" })} className="action-button ml-auto text-[#ff8d98]! hover:bg-[#2b191d]!" type="button"><MaterialIcon name="delete" />{key.isSiteKey ? "Revoke access" : "Delete"}</button>{busyId === key.id && <span className="self-center text-[10px] font-semibold text-[#8b95a8]">Updating...</span>}</div>
+            <div className="mt-3 flex flex-wrap gap-2"><button onClick={() => { setEditingId(key.id); setEditingName(key.name); }} className="action-button" type="button"><MaterialIcon name="edit" />Rename</button><button onClick={() => editPolicy(key)} className="action-button" type="button"><MaterialIcon name="tune" />Edit limits</button><button onClick={() => setDomainLockKey({ ...key, domainLock: key.domainLock ?? { enabled: false, origins: [] } })} className="action-button" type="button"><MaterialIcon name="domain_verification" />Domain lock</button><button onClick={() => updateKey(key, key.status === "active" ? "pause" : "resume")} className="action-button" type="button"><MaterialIcon name={key.status === "active" ? "pause" : "play_arrow"} />{key.status === "active" ? "Pause" : "Resume"}</button>{key.managed ? <button onClick={() => setConfirmation({ key, action: "regenerate" })} className="action-button" type="button"><MaterialIcon name="sync_lock" />Replace key</button> : null}<button onClick={() => setConfirmation({ key, action: "delete" })} className="action-button ml-auto text-[#ff8d98]! hover:bg-[#2b191d]!" type="button"><MaterialIcon name="delete" />{key.isSiteKey ? "Revoke access" : "Delete"}</button>{busyId === key.id && <span className="self-center text-[10px] font-semibold text-[#8b95a8]">Updating...</span>}</div>
           </article>
         ))}</div>}
       </section>
-      <div className="mt-5"><DomainLockSettings /></div>
       <style jsx>{`.action-button { display:flex; align-items:center; gap:6px; border-radius:9px; padding:7px 10px; color:#98a2b4; font-size:10px; font-weight:700; transition:background-color .15s; } .action-button:hover { background:#202532; } .action-button :global(.material-symbols-rounded) { font-size:15px; }`}</style>
     </>
   );
