@@ -28,19 +28,19 @@ The browser never receives `RIOANIME_API_KEY` and does not connect to D1 directl
 
 ```mermaid
 flowchart LR
-    U[Visitor browser] --> N[Next.js application]
-    N --> S[Server Components and route handlers]
-    S -->|X-RioAnime-Key| W[Cloudflare Worker API]
-    W --> A{Origin and key valid?}
-    A -->|No| X[404 response]
-    A -->|Yes| C{Cached response?}
-    C -->|Yes| R[Return cached JSON]
-    C -->|No| D[(Cloudflare D1)]
-    D --> M[Map database rows]
-    M --> K[Store revision-aware cache]
+    U["Visitor browser"] --> N["Next.js application"]
+    N --> S["Server Components and route handlers"]
+    S -->|"X-RioAnime-Key"| W["Cloudflare Worker API"]
+    W --> A{"Origin and key valid?"}
+    A -->|"No"| X["404 response"]
+    A -->|"Yes"| C{"Cached response?"}
+    C -->|"Yes"| R["Return cached JSON"]
+    C -->|"No"| D[("Cloudflare D1")]
+    D --> M["Map database rows"]
+    M --> K["Store revision-aware cache"]
     K --> R
     R --> S
-    S --> V[UI view models]
+    S --> V["UI view models"]
     V --> U
     W -. request metrics .-> D
 ```
@@ -117,18 +117,18 @@ app/page.tsx
 
 ```mermaid
 flowchart TD
-    B[Browse or search UI] --> Q{Request type}
-    Q -->|Browse page| BR[fetchBrowseCatalog]
-    Q -->|A-Z page| AZ[fetchAlphabeticalCatalog]
-    Q -->|Search query| SE[searchAnimeByTitle]
-    BR --> WB[/Worker /v1/browse/]
-    AZ --> WA[/Worker /v1/anime/a-z/]
-    SE --> WS[/Worker /v1/search?q=.../]
-    WB --> DB[(D1 anime)]
+    B["Browse or search UI"] --> Q{"Request type"}
+    Q -->|"Browse page"| BR["fetchBrowseCatalog"]
+    Q -->|"A-Z page"| AZ["fetchAlphabeticalCatalog"]
+    Q -->|"Search query"| SE["searchAnimeByTitle"]
+    BR --> WB["Worker /v1/browse"]
+    AZ --> WA["Worker /v1/anime/a-z"]
+    SE --> WS["Worker /v1/search?q=..."]
+    WB --> DB[("D1 anime")]
     WA --> DB
-    WS -->|Bound parameters and limit <= 20| DB
-    DB --> F[Published public records only]
-    F --> UI[Mapped cards and filters]
+    WS -->|"Bound parameters; limit up to 20"| DB
+    DB --> F["Published public records only"]
+    F --> UI["Mapped cards and filters"]
 ```
 
 - Catalog responses use a revision-aware Worker cache with a 15-minute maximum TTL.
@@ -172,13 +172,13 @@ This keeps the Worker credential server-side and avoids placing the full episode
 
 ```mermaid
 flowchart LR
-    G[Google OAuth] --> NA[NextAuth]
-    NA --> JWT[JWT session]
-    NA -->|POST /v1/user/sync| W[Worker]
-    W --> A[(D1 accounts)]
-    U[Signed-in member] --> L[/api/library]
-    L -->|User identity + API key| W
-    W --> AL[(account_library)]
+    G["Google OAuth"] --> NA["NextAuth"]
+    NA --> JWT["JWT session"]
+    NA -->|"POST /v1/user/sync"| W["Worker"]
+    W --> A[("D1 accounts")]
+    U["Signed-in member"] --> L["/api/library"]
+    L -->|"User identity and API key"| W
+    W --> AL[("account_library")]
     AL --> L
     L --> U
 ```
@@ -221,17 +221,17 @@ RioAnime uses caching at multiple layers without allowing stale catalog data to 
 
 ```mermaid
 flowchart TD
-    R[Catalog or announcement changes] --> REV[Increment D1 revision]
-    REV --> MAN[/v1/cache-manifest]
-    MAN --> NX[Next.js manifest proxy]
-    NX --> IDB[Browser IndexedDB cache]
-    IDB --> CMP{Revision matches?}
-    CMP -->|Yes| FAST[Use local resource]
-    CMP -->|No| NET[Fetch fresh resource]
+    R["Catalog or announcement changes"] --> REV["Increment D1 revision"]
+    REV --> MAN["/v1/cache-manifest"]
+    MAN --> NX["Next.js manifest proxy"]
+    NX --> IDB["Browser IndexedDB cache"]
+    IDB --> CMP{"Revision matches?"}
+    CMP -->|"Yes"| FAST["Use local resource"]
+    CMP -->|"No"| NET["Fetch fresh resource"]
     NET --> IDB
-    NET --> VIEW[Render current content]
+    NET --> VIEW["Render current content"]
     FAST --> VIEW
-    ERR[Network unavailable] --> FALLBACK[Use stale validated local copy]
+    ERR["Network unavailable"] --> FALLBACK["Use stale validated local copy"]
     FALLBACK --> VIEW
 ```
 
@@ -248,14 +248,14 @@ The D1 catalog is authoritative at runtime. External providers enrich existing r
 
 ```mermaid
 flowchart LR
-    D1A[(Existing D1 source IDs)] --> SYNC[scripts/sync-anime.mjs]
-    SYNC --> ANI[AniList GraphQL]
-    SYNC --> TV[TVMaze API]
-    ANI --> MERGE[Preserve populated local fields]
+    D1A[("Existing D1 source IDs")] --> SYNC["scripts/sync-anime.mjs"]
+    SYNC --> ANI["AniList GraphQL"]
+    SYNC --> TV["TVMaze API"]
+    ANI --> MERGE["Preserve populated local fields"]
     TV --> MERGE
-    MERGE --> D1B[(Updated D1 catalog)]
-    D1B --> REV[Increment catalog_revision]
-    REV --> MISS[Cached clients fetch current catalog]
+    MERGE --> D1B[("Updated D1 catalog")]
+    D1B --> REV["Increment catalog_revision"]
+    REV --> MISS["Cached clients fetch current catalog"]
 ```
 
 The sync process only fills empty or missing metadata where appropriate, preserving intentional dashboard edits.
