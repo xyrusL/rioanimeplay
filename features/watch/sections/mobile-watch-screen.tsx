@@ -25,6 +25,10 @@ type MobileWatchScreenProps = {
   anime: WatchAnimeItem;
 };
 
+type LockableScreenOrientation = ScreenOrientation & {
+  lock(orientation: "landscape"): Promise<void>;
+};
+
 export function MobileWatchScreen({ anime }: MobileWatchScreenProps) {
   const { ready: ageGateReady, confirmed: adultConfirmed } = useAgeGate();
   const [selectedEpisode, setSelectedEpisode] = useState(1);
@@ -72,7 +76,7 @@ export function MobileWatchScreen({ anime }: MobileWatchScreenProps) {
       if (playerSection.requestFullscreen) {
         await playerSection.requestFullscreen();
         try {
-          await screen.orientation.lock("landscape");
+          await (screen.orientation as LockableScreenOrientation).lock("landscape");
         } catch {
           // Fullscreen still gives the user the browser's orientation control.
         }
