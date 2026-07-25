@@ -30,7 +30,14 @@ const PRINCIPLES = [
   }
 ] as const;
 
-const STORY = [
+type StoryStep = {
+  icon: string;
+  year?: string;
+  title: string;
+  text: string;
+};
+
+const STORY: StoryStep[] = [
   {
     icon: "rocket_launch",
     year: "2022",
@@ -57,7 +64,7 @@ const STORY = [
     title: "The Story Continues",
     text: "We never stop building. RioAnimePlay continues to evolve, aiming to be a better platform for every anime fan out there."
   }
-] as const;
+];
 
 const CONTACTS = [
   {
