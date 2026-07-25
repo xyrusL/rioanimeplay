@@ -4,22 +4,15 @@ import Link from "next/link";
 import type { HomePageData } from "@/entities/anime/model/types";
 import { SearchAutocomplete } from "@/features/search/sections/search-autocomplete";
 import type { SiteSettings } from "@/shared/lib/site-settings";
-import { LockdownAction } from "@/shared/ui/lockdown-action";
 import { MaterialIcon } from "@/shared/ui/icons/material-icon";
 import { SensitiveImage } from "@/shared/ui/sensitive-image";
-import { SiteBrand } from "@/shared/ui/site-brand";
+import { HomeNavigationHeader } from "@/features/home/sections/home-navigation-header";
 
 type HomeShowcaseProps = {
   authLockdown: SiteSettings["authLockdown"];
   homePageData: HomePageData;
+  member: { name: string; email: string; image: string | null } | null;
 };
-
-const NAV_ITEMS = [
-  { label: "Home", href: "/home" },
-  { label: "Filter", href: "/filter" },
-  { label: "A-Z List", href: "/anime/a-z" },
-  { label: "Random", href: "/random" }
-];
 
 const QUICK_LINKS = [
   { label: "A-Z List", href: "/anime/a-z", icon: "format_list_bulleted" },
@@ -27,63 +20,13 @@ const QUICK_LINKS = [
   { label: "Advanced Filter", href: "/filter", icon: "filter_alt" }
 ];
 
-export function HomeShowcase({ authLockdown, homePageData }: HomeShowcaseProps) {
+export function HomeShowcase({ authLockdown, homePageData, member }: HomeShowcaseProps) {
   const spotlight = homePageData.spotlight;
   const visualItems = homePageData.featured.slice(0, 4);
 
   return (
     <section aria-labelledby="intro-hero-title">
-      <header className="relative z-[230] flex min-h-20 items-center justify-between gap-5 border-b border-[var(--line-soft)] py-4">
-        <SiteBrand compact href="/home" />
-
-        <nav aria-label="Primary navigation" className="hidden items-stretch self-stretch lg:flex">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              aria-current={item.href === "/home" ? "page" : undefined}
-              className="relative grid min-w-20 place-items-center px-4 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--accent)] aria-[current=page]:text-[var(--accent-strong)] aria-[current=page]:after:absolute aria-[current=page]:after:inset-x-4 aria-[current=page]:after:bottom-[-1px] aria-[current=page]:after:h-0.5 aria-[current=page]:after:bg-[var(--accent)]"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="hidden min-w-0 flex-1 justify-end xl:flex">
-          <LockdownAction
-            locked={authLockdown.enabled}
-            message={authLockdown.message}
-            href="/account"
-            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[var(--accent)] px-5 py-3 text-sm font-semibold text-white shadow-[var(--cta-shadow)] transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[var(--accent-strong)]"
-          >
-            <MaterialIcon className="text-[18px]" filled name="person" />
-            Sign in
-          </LockdownAction>
-        </div>
-
-        <LockdownAction
-          locked={authLockdown.enabled}
-          message={authLockdown.message}
-          href="/account"
-          className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[var(--accent)] px-3.5 py-2.5 text-sm font-semibold text-white xl:hidden"
-        >
-          <MaterialIcon className="text-[18px]" filled name="person" />
-          <span className="hidden sm:inline">Sign in</span>
-        </LockdownAction>
-      </header>
-
-      <nav aria-label="Mobile navigation" className="relative z-[220] -mx-1 flex gap-1 overflow-x-auto py-3 lg:hidden">
-        {NAV_ITEMS.map((item) => (
-          <Link
-            key={item.label}
-            href={item.href}
-            aria-current={item.href === "/home" ? "page" : undefined}
-            className="shrink-0 rounded-full border border-[var(--line-soft)] px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] aria-[current=page]:border-[var(--line-strong)] aria-[current=page]:bg-[var(--accent-soft)] aria-[current=page]:text-[var(--accent-strong)]"
-          >
-            {item.label}
-          </Link>
-        ))}
-      </nav>
+      <HomeNavigationHeader authLockdown={authLockdown} member={member} />
 
       <div className="intro-hero relative z-[200] isolate min-h-[610px] overflow-visible rounded-b-[28px] border-x border-b border-[var(--line-soft)] bg-[var(--hero-surface)] px-5 py-12 shadow-[var(--hero-shadow)] sm:px-8 lg:px-12 lg:py-16">
         {spotlight?.bannerImage ? (

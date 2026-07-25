@@ -103,16 +103,16 @@ export function MobileHomeScreen({
       <div className="space-y-6">
         <header className="space-y-4 rounded-[34px] border border-[var(--line-soft)] bg-[var(--panel-surface)] p-4 shadow-[var(--panel-shadow)]">
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
               <ProfileAvatar
                 className="h-14 w-14 rounded-full bg-[linear-gradient(135deg,var(--accent-strong),var(--accent))] text-lg font-semibold text-[var(--bg-base)] shadow-[0_14px_28px_var(--accent-soft)]"
                 image={member?.image}
                 imageSizes="56px"
                 name={member?.name ?? "Guest"}
               />
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm text-[var(--text-secondary)]">Welcome back</p>
-                <h1 className="text-xl font-semibold text-[var(--text-primary)]">
+                <h1 className="truncate text-xl font-semibold text-[var(--text-primary)]">
                   {member?.name.split(" ")[0] || "Guest"}
                 </h1>
               </div>

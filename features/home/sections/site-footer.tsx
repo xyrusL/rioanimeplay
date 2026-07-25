@@ -28,8 +28,8 @@ const FOOTER_GROUPS = [
   {
     title: "Info",
     links: [
-      { label: "Browse catalog", href: "/" },
-      { label: "How it works", href: "/home#steps-title" },
+      { label: "About us", href: "/about" },
+      { label: "How it works", href: "/about#how-it-works" },
       { label: "Member access", href: "/account" }
     ]
   }
@@ -41,7 +41,7 @@ export function SiteFooter({ variant = "compact" }: SiteFooterProps) {
       <footer className="border-t border-[var(--line-soft)] pb-3 pt-7">
         <div className="grid gap-8 lg:grid-cols-[1.15fr_1.5fr_1fr]">
           <div>
-            <SiteBrand compact href="/home" />
+            <SiteBrand compact href="/" />
             <p className="mt-4 max-w-[300px] text-xs leading-6 text-[var(--text-secondary)]">
               A simple place to discover anime, save what catches your eye, and move straight into watching.
             </p>

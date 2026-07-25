@@ -50,7 +50,7 @@ export function MobileHomeScreen({ homePageData }: { homePageData: HomePageData 
   return (
     <div className="mobile-home mx-auto w-full max-w-[520px] pb-5 lg:hidden">
       <header className="flex h-[74px] items-center justify-between border-b border-white/10 px-4">
-        <SiteBrand compact href="/home" />
+        <SiteBrand compact href="/" />
         <Link
           href="#mobile-search"
           aria-label="Jump to anime search"
@@ -206,7 +206,7 @@ export function MobileHomeScreen({ homePageData }: { homePageData: HomePageData 
           <p className="mt-4 text-[0.75rem] leading-6 text-slate-300">
             RioAnimePlay is a simple place to start when you want to find something good to watch. The catalog is built for anime lovers who want discovery without the detour.
           </p>
-          <Link href="/anime/a-z" className="mt-4 inline-flex items-center gap-1 text-[0.72rem] font-bold text-pink-400">
+          <Link href="/about" className="mt-4 inline-flex items-center gap-1 text-[0.72rem] font-bold text-pink-400">
             Learn more <MaterialIcon className="text-[16px]" name="chevron_right" />
           </Link>
         </section>
@@ -248,7 +248,7 @@ export function MobileHomeScreen({ homePageData }: { homePageData: HomePageData 
       </main>
 
       <footer id="mobile-footer-nav" className="mt-9 border-t border-white/10 px-5 pb-4 pt-7">
-        <SiteBrand compact href="/home" />
+        <SiteBrand compact href="/" />
         <p className="mt-4 max-w-[285px] text-[0.75rem] leading-6 text-slate-400">Your simple place to discover and watch amazing anime.</p>
         <nav aria-label="Footer navigation" className="mt-6 space-y-2">
           {[

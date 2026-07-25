@@ -8,11 +8,13 @@ import { ScrollToTopButton } from "@/shared/ui/scroll-to-top-button";
 
 type IntroHomeScreenProps = {
   homePageData: HomePageData;
+  member: { name: string; email: string; image: string | null } | null;
   siteSettings: SiteSettings;
 };
 
 export function IntroHomeScreen({
   homePageData,
+  member,
   siteSettings
 }: IntroHomeScreenProps) {
   return (
@@ -23,6 +25,7 @@ export function IntroHomeScreen({
         <HomeShowcase
           authLockdown={siteSettings.authLockdown}
           homePageData={homePageData}
+          member={member}
         />
         <IntroArticle homePageData={homePageData} />
         <SiteFooter variant="landing" />

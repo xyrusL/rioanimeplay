@@ -63,6 +63,12 @@ Mobile is a separate product composition, not a scaled-down copy of desktop. Rou
 - The content order is featured carousel, announcement strip, personalized Recent Watch or Latest Update shelf, weekly ranking, and recent updates.
 - This composition belongs to `features/mobile/home/` and is intentionally distinct from the desktop hero/grid/sidebar layout.
 
+### About (`/about`)
+
+- The About route uses a responsive editorial composition rather than the persistent mobile app shell because it is informational, not a primary app destination.
+- On narrow screens, the hero collage becomes a contained poster orbit, the product journey becomes a vertical reading flow, and navigation remains available at the top of the page.
+- The floating bottom navigation is intentionally absent on this route.
+
 ### Bookmarks (`/bookmarks`)
 
 - This route is currently mobile-specific and renders `MobileBookmarksScreen` directly; it does not mirror a desktop bookmarks page.
