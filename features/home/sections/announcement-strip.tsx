@@ -49,28 +49,28 @@ export function AnnouncementStrip() {
       <AnimatedModal
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        backdropClassName="bg-[var(--modal-overlay)] px-4 backdrop-blur-sm"
-        panelClassName="w-full max-w-[680px] rounded-[30px] border border-[var(--line-strong)] bg-[var(--modal-surface)] p-6 shadow-[var(--modal-shadow)]"
+        backdropClassName="bg-[var(--modal-overlay)] px-3 py-4 backdrop-blur-sm sm:px-4"
+        panelClassName="relative max-h-[calc(100dvh-2rem)] w-full max-w-[680px] overflow-y-auto rounded-[22px] border border-[var(--line-strong)] bg-[var(--modal-surface)] p-5 shadow-[var(--modal-shadow)] sm:rounded-[30px] sm:p-6"
       >
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-2">
-            <p className="flex items-center gap-2 font-display text-[0.86rem] uppercase tracking-[0.22em] text-[var(--accent-strong)]">
-              <MaterialIcon className="text-[18px]" name="campaign" />
+        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-2.5 pr-11 sm:gap-x-3 sm:pr-12">
+          <MaterialIcon className="mt-0.5 text-[18px] text-[var(--accent-strong)]" name="campaign" />
+          <div className="min-w-0 space-y-2">
+            <p className="font-display text-[0.8rem] leading-5 uppercase tracking-[0.18em] text-[var(--accent-strong)] sm:text-[0.86rem] sm:tracking-[0.22em]">
               {title}
             </p>
-            <p className="text-sm leading-7 text-[var(--text-secondary)] sm:text-[0.98rem]">
+            <p className="text-sm leading-6 text-[var(--text-secondary)] sm:text-[0.98rem] sm:leading-7">
               {message}
             </p>
           </div>
-          <button
-            type="button"
-            aria-label="Close announcement details"
-            onClick={() => setIsOpen(false)}
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--line-soft)] bg-[rgba(255,255,255,0.03)] text-[var(--text-secondary)] transition-[border-color,color,transform] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:-translate-y-0.5 hover:border-[var(--line-strong)] hover:text-[var(--text-primary)]"
-          >
-            <MaterialIcon className="text-[18px]" name="close" />
-          </button>
         </div>
+        <button
+          type="button"
+          aria-label="Close announcement details"
+          onClick={() => setIsOpen(false)}
+          className="absolute right-4 top-4 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--line-soft)] bg-[rgba(255,255,255,0.03)] text-[var(--text-secondary)] transition-[border-color,color,transform] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:-translate-y-0.5 hover:border-[var(--line-strong)] hover:text-[var(--text-primary)] sm:right-5 sm:top-5"
+        >
+          <MaterialIcon className="text-[18px]" name="close" />
+        </button>
       </AnimatedModal>
     </>
   );

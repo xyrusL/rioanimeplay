@@ -37,6 +37,7 @@ export function ScheduledAnnouncementModal({
   }, [animeId, placement]);
 
   const item = !waitForAdultConfirmation || (ageGateReady && adultConfirmed) ? queue[0] ?? null : null;
+  const isVideoAds = item?.kind === "video_ads";
 
   function close() {
     if (item && item.repeat !== "always") {
@@ -50,77 +51,148 @@ export function ScheduledAnnouncementModal({
       isOpen={Boolean(item)}
       onClose={close}
       labelledBy="scheduled-announcement-title"
-      backdropClassName="bg-[rgba(4,5,10,0.86)] px-4 py-5 backdrop-blur-[10px]"
-      panelClassName="relative w-full max-w-[460px] overflow-hidden rounded-[24px] border border-[rgba(180,156,255,0.24)] bg-[linear-gradient(145deg,rgba(31,28,47,0.98),rgba(17,18,29,0.98))] shadow-[0_28px_76px_rgba(0,0,0,0.62),0_0_44px_rgba(125,72,255,0.1)]"
+      backdropClassName={isVideoAds
+        ? "bg-[radial-gradient(circle_at_50%_45%,rgba(27,29,42,0.42),rgba(3,5,11,0.96)_68%)] px-3 py-4 backdrop-blur-[8px] sm:px-4 sm:py-5"
+        : "bg-[rgba(4,5,10,0.86)] px-3 py-4 backdrop-blur-[10px] sm:px-4 sm:py-5"}
+      panelClassName={isVideoAds
+        ? "relative max-h-[calc(100dvh-2rem)] w-full max-w-[460px] overflow-y-auto rounded-[20px] border border-white/15 bg-[linear-gradient(145deg,#171a22_0%,#11141b_100%)] shadow-[0_28px_76px_rgba(0,0,0,0.68),inset_0_1px_0_rgba(255,255,255,0.035)] sm:max-h-[calc(100dvh-2.5rem)] sm:rounded-[24px]"
+        : "relative max-h-[calc(100dvh-2rem)] w-full max-w-[460px] overflow-y-auto rounded-[20px] border border-[rgba(180,156,255,0.24)] bg-[linear-gradient(145deg,rgba(31,28,47,0.98),rgba(17,18,29,0.98))] shadow-[0_28px_76px_rgba(0,0,0,0.62),0_0_44px_rgba(125,72,255,0.1)] sm:max-h-[calc(100dvh-2.5rem)] sm:rounded-[24px]"}
     >
-      <div className="relative p-5">
-        <div className="pointer-events-none absolute -top-24 -left-20 h-56 w-56 rounded-full bg-[rgba(218,63,181,0.16)] blur-3xl" />
-        <div className="pointer-events-none absolute -right-20 bottom-0 h-64 w-64 rounded-full bg-[rgba(90,72,255,0.18)] blur-3xl" />
+      {isVideoAds ? (
+        <div className="relative p-4 sm:p-5">
+          <div className="pointer-events-none absolute -left-16 -top-20 h-48 w-48 rounded-full bg-[rgba(93,83,186,0.1)] blur-3xl" />
 
-        <header className="relative flex items-start gap-3.5 pr-11">
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[16px] bg-[linear-gradient(145deg,#ef56ad_0%,#9b45f3_48%,#5d55ff_100%)] text-white shadow-[0_12px_28px_rgba(139,68,244,0.34)]">
-            <MaterialIcon className="text-[27px]" filled name={item?.kind === "video_ads" ? "ads_click" : "notifications_active"} />
-          </span>
-          <div className="min-w-0 pt-0.5 sm:pt-1">
-            <h2
-              id="scheduled-announcement-title"
-              className="text-[1.3rem] leading-tight font-bold text-white"
-            >
-              {item?.kind === "video_ads" ? "Before you watch" : <>Hello there! <span aria-hidden="true">👋</span></>}
-            </h2>
-            <p className="mt-1.5 text-sm leading-5 text-[rgba(229,225,240,0.7)]">
-              {item?.kind === "video_ads" ? "A quick note about this video player." : "We've got an update to share with you."}
-            </p>
-          </div>
-        </header>
-
-        <button
-          type="button"
-          aria-label="Close announcement"
-          onClick={close}
-          className="absolute top-4 right-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-black/15 text-white/65 transition-[border-color,color,background-color,transform] hover:rotate-3 hover:border-white/20 hover:bg-white/5 hover:text-white"
-        >
-          <MaterialIcon className="text-[20px]" name="close" />
-        </button>
-
-        <section className="relative mt-4 rounded-[18px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.055),rgba(255,255,255,0.025))] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-          <div className="flex items-start gap-3 sm:gap-5">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] bg-[rgba(151,75,237,0.13)] text-[#c984ff] ring-1 ring-[rgba(190,132,255,0.08)]">
-              <MaterialIcon className="text-[23px]" name="auto_awesome" />
+          <header className="relative flex items-start gap-3.5 pr-11">
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[16px] bg-[rgba(102,91,188,0.18)] text-[#b9b2ff] ring-1 ring-white/5">
+              <MaterialIcon className="text-[27px]" filled name="campaign" />
             </span>
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <h3 className="text-base leading-5 font-bold text-white">
-                  {item?.title}
-                </h3>
-                <span className="shrink-0 rounded-lg bg-[linear-gradient(135deg,#a23ee4,#6b43d7)] px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.14em] text-white shadow-[0_8px_22px_rgba(117,57,209,0.3)]">
-                  {item?.kind === "video_ads" ? "Notice" : "New"}
-                </span>
-              </div>
-              <p className="mt-1.5 whitespace-pre-wrap text-sm leading-5 text-[rgba(229,225,240,0.72)]">
-                {item?.message}
+            <div className="min-w-0 pt-0.5">
+              <h2 id="scheduled-announcement-title" className="text-lg font-bold leading-tight text-white">
+                Before you watch
+              </h2>
+              <p className="mt-1 text-xs leading-5 text-[#aaaeba]">
+                A quick note about this video player.
               </p>
             </div>
-          </div>
-        </section>
+          </header>
 
-        <footer className="relative mt-4 flex items-center justify-between gap-3 border-t border-white/10 pt-4">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-white">
-              For you <span className="text-[#ef67b5]">♥</span>
-            </p>
-            <p className="truncate text-xs text-white/50">Thanks for being part of RioAnime.</p>
-          </div>
           <button
             type="button"
+            aria-label="Close announcement"
             onClick={close}
-            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-[14px] bg-[linear-gradient(110deg,#eb5aa8,#a647e8_52%,#6655ff)] px-5 text-sm font-bold text-white shadow-[0_14px_32px_rgba(139,65,229,0.28)] transition-[transform,filter,box-shadow] hover:-translate-y-0.5 hover:brightness-110 hover:shadow-[0_18px_38px_rgba(139,65,229,0.38)]"
+            className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-black/15 text-white/65 transition-colors hover:border-white/20 hover:bg-white/5 hover:text-white"
           >
-            Got it!
-            <MaterialIcon className="text-[22px]" name="arrow_forward" />
+            <MaterialIcon className="text-[20px]" name="close" />
           </button>
-        </footer>
-      </div>
+
+          <section className="relative mt-4 rounded-[18px] border border-white/10 bg-[linear-gradient(140deg,rgba(255,255,255,0.045),rgba(255,255,255,0.012))] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
+            <div className="flex items-start gap-3">
+              <span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] bg-[rgba(119,86,173,0.16)] text-[11px] font-extrabold text-[#d8d2ff] ring-1 ring-white/5">
+                ADS
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <h3 className="text-sm font-bold leading-5 text-white">
+                    {item?.title}
+                  </h3>
+                  <span className="shrink-0 rounded-lg bg-[linear-gradient(135deg,#50477f,#383466)] px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.12em] text-[#f2efff]">
+                    Notice
+                  </span>
+                </div>
+                <p className="mt-1 whitespace-pre-wrap text-xs leading-5 text-[#aeb1bc]">
+                  {item?.message}
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <footer className="relative mt-4 flex flex-col gap-3 border-t border-white/10 pt-4 min-[390px]:flex-row min-[390px]:items-center min-[390px]:justify-between">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-white">
+                For you <span className="text-[#8c6dc4]">♥</span>
+              </p>
+              <p className="text-xs text-[#969aa7]">Thanks for being part of RioAnime.</p>
+            </div>
+            <button
+              type="button"
+              onClick={close}
+              className="inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-[14px] bg-[linear-gradient(115deg,#7454aa,#57417e)] px-5 text-sm font-bold text-white shadow-[0_14px_32px_rgba(74,52,116,0.3)] transition-[transform,filter,box-shadow] hover:-translate-y-0.5 hover:brightness-110 hover:shadow-[0_18px_38px_rgba(74,52,116,0.4)] min-[390px]:w-auto"
+            >
+              Got it!
+              <MaterialIcon className="text-[22px]" name="arrow_forward" />
+            </button>
+          </footer>
+        </div>
+      ) : (
+        <div className="relative p-4 sm:p-5">
+          <div className="pointer-events-none absolute -top-24 -left-20 h-56 w-56 rounded-full bg-[rgba(218,63,181,0.16)] blur-3xl" />
+          <div className="pointer-events-none absolute -right-20 bottom-0 h-64 w-64 rounded-full bg-[rgba(90,72,255,0.18)] blur-3xl" />
+
+          <header className="relative flex items-start gap-3 pr-11 sm:gap-3.5">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[15px] bg-[linear-gradient(145deg,#ef56ad_0%,#9b45f3_48%,#5d55ff_100%)] text-white shadow-[0_12px_28px_rgba(139,68,244,0.34)] sm:h-12 sm:w-12 sm:rounded-[16px]">
+              <MaterialIcon className="text-[25px] sm:text-[27px]" filled name="notifications_active" />
+            </span>
+            <div className="min-w-0 pt-0.5 sm:pt-1">
+              <h2
+                id="scheduled-announcement-title"
+                className="text-lg font-bold leading-tight text-white sm:text-[1.3rem]"
+              >
+                Hello there! <span aria-hidden="true">👋</span>
+              </h2>
+              <p className="mt-1 text-xs leading-5 text-[rgba(229,225,240,0.7)] sm:mt-1.5 sm:text-sm">
+                We&apos;ve got an update to share with you.
+              </p>
+            </div>
+          </header>
+
+          <button
+            type="button"
+            aria-label="Close announcement"
+            onClick={close}
+            className="absolute top-4 right-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-black/15 text-white/65 transition-[border-color,color,background-color,transform] hover:rotate-3 hover:border-white/20 hover:bg-white/5 hover:text-white"
+          >
+            <MaterialIcon className="text-[20px]" name="close" />
+          </button>
+
+          <section className="relative mt-4 rounded-[18px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.055),rgba(255,255,255,0.025))] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+            <div className="flex items-start gap-3 sm:gap-5">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] bg-[rgba(151,75,237,0.13)] text-[#c984ff] ring-1 ring-[rgba(190,132,255,0.08)]">
+                <MaterialIcon className="text-[23px]" name="auto_awesome" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <h3 className="text-sm font-bold leading-5 text-white sm:text-base">
+                    {item?.title}
+                  </h3>
+                  <span className="shrink-0 rounded-lg bg-[linear-gradient(135deg,#a23ee4,#6b43d7)] px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.14em] text-white shadow-[0_8px_22px_rgba(117,57,209,0.3)]">
+                    New
+                  </span>
+                </div>
+                <p className="mt-1 whitespace-pre-wrap text-xs leading-5 text-[rgba(229,225,240,0.72)] sm:mt-1.5 sm:text-sm">
+                  {item?.message}
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <footer className="relative mt-4 flex flex-col gap-3 border-t border-white/10 pt-4 min-[390px]:flex-row min-[390px]:items-center min-[390px]:justify-between">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-white">
+                For you <span className="text-[#ef67b5]">♥</span>
+              </p>
+              <p className="text-xs text-white/50">Thanks for being part of RioAnime.</p>
+            </div>
+            <button
+              type="button"
+              onClick={close}
+              className="inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-[14px] bg-[linear-gradient(110deg,#eb5aa8,#a647e8_52%,#6655ff)] px-5 text-sm font-bold text-white shadow-[0_14px_32px_rgba(139,65,229,0.28)] transition-[transform,filter,box-shadow] hover:-translate-y-0.5 hover:brightness-110 hover:shadow-[0_18px_38px_rgba(139,65,229,0.38)] min-[390px]:w-auto"
+            >
+              Got it!
+              <MaterialIcon className="text-[22px]" name="arrow_forward" />
+            </button>
+          </footer>
+        </div>
+      )}
     </AnimatedModal>
   );
 }

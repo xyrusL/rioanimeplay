@@ -1,6 +1,6 @@
 import { contentRetention } from "./shared/lib/content-retention.mjs";
 import { normalizePostUrlSlug, isValidPostUrlSlug } from "./shared/lib/post-url-slug.mjs";
-import { cacheTtlBeforeBoundary, etagMatches, shouldSampleSuccess } from "./shared/lib/public-cache-policy.mjs";
+import { etagMatches } from "./shared/lib/public-cache-policy.mjs";
 
 const FALLBACK_ALLOWED_ORIGINS = new Set([
   "http://localhost:3000",
@@ -2139,17 +2139,15 @@ const worker = {
     }
     try {
       const response = await routeRequest(request, env, ctx, origin);
-      const cacheHit = response.headers.get("X-RioAnime-Cache") === "HIT";
-      const recordSuccess = response.status >= 400 || (!cacheHit && shouldSampleSuccess(`${path}:${request.headers.get("CF-Ray") ?? request.headers.get("User-Agent") ?? "request"}`, 0.02));
-      if (recordSuccess) {
-        ctx.waitUntil(
-          Promise.all([
-            recordRequestMetric(env, path, response.status, Date.now() - startedAt),
-            recordApiKeyMetric(env, authenticatedKey.metricsId, path, response.status, Date.now() - startedAt),
-            recordApiKeyPolicyUsage(env, authenticatedKey.id, response)
-          ]).catch((cause) => console.error("RioAnime API metric recording failed", cause))
-        );
-      }
+      const duration = Date.now() - startedAt;
+      // Keep dashboard totals and API-key limits accurate, including cached responses.
+      ctx.waitUntil(
+        Promise.all([
+          recordRequestMetric(env, path, response.status, duration),
+          recordApiKeyMetric(env, authenticatedKey.metricsId, path, response.status, duration),
+          recordApiKeyPolicyUsage(env, authenticatedKey.id, response)
+        ]).catch((cause) => console.error("RioAnime API metric recording failed", cause))
+      );
       return response;
     } catch (cause) {
       console.error("RioAnime API request failed", cause);
