@@ -67,7 +67,7 @@ async function responseError(response: Response) {
 }
 
 function SummaryCard({ icon, label, value, detail, tone }: { icon: string; label: string; value: string; detail: string; tone: string }) {
-  return <article className="rounded-2xl border border-[#292e3c] bg-[#151923] p-5"><span className={`grid h-9 w-9 place-items-center rounded-lg ${tone}`}><MaterialIcon className="text-[18px]" filled name={icon} /></span><p className="mt-4 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#7f899d]">{label}</p><p className="mt-1 text-2xl font-bold text-[#f2f4f8]">{value}</p><p className="mt-1.5 text-[9px] text-[#697386]">{detail}</p></article>;
+  return <article className="flex items-center gap-3 rounded-xl border border-[#292e3c] bg-[#151923] p-3"><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${tone}`}><MaterialIcon className="text-[16px]" filled name={icon} /></span><div className="min-w-0 flex-1"><div className="flex items-baseline justify-between gap-2"><p className="truncate text-[9px] font-semibold uppercase tracking-[0.08em] text-[#7f899d]">{label}</p><p className="shrink-0 text-lg font-bold leading-none text-[#f2f4f8]">{value}</p></div><p className="mt-1 truncate text-[9px] text-[#697386]">{detail}</p></div></article>;
 }
 
 function Badge({ children, tone }: { children: React.ReactNode; tone: string }) {

@@ -65,7 +65,7 @@ function EmptyData() {
 }
 
 function Metric({ icon, label, value, detail, tone }: { icon: string; label: string; value: string; detail: string; tone: string }) {
-  return <article className="rounded-2xl border border-[#292e3c] bg-[#151923] p-5 shadow-[0_14px_35px_rgba(0,0,0,0.18)]"><span className={`grid h-9 w-9 place-items-center rounded-lg ${tone}`}><MaterialIcon className="text-[18px]" filled name={icon} /></span><p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#7f899d]">{label}</p><p className="mt-1.5 text-[26px] font-bold tracking-[-0.035em] text-[#f5f7fb]">{value}</p><p className="mt-2 text-[10px] text-[#778196]">{detail}</p></article>;
+  return <article className="flex items-center gap-3 rounded-xl border border-[#292e3c] bg-[#151923] p-3 shadow-[0_10px_24px_rgba(0,0,0,0.14)]"><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${tone}`}><MaterialIcon className="text-[16px]" filled name={icon} /></span><div className="min-w-0 flex-1"><div className="flex items-baseline justify-between gap-2"><p className="truncate text-[9px] font-semibold uppercase tracking-[0.08em] text-[#7f899d]">{label}</p><p className="shrink-0 text-lg font-bold leading-none tracking-[-0.025em] text-[#f5f7fb]">{value}</p></div><p className="mt-1 truncate text-[9px] text-[#778196]">{detail}</p></div></article>;
 }
 
 function Overview({ data }: { data: DashboardResponse | null }) {
