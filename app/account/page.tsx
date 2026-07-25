@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { headers } from "next/headers";
 
 import { auth, signIn, signOut } from "@/auth";
@@ -9,6 +10,11 @@ import { MobileSettingsScreen } from "@/features/mobile/account/mobile-settings-
 import { ResponsiveRender } from "@/features/mobile/shared/responsive-render";
 import { isLikelyMobileUserAgent } from "@/shared/lib/mobile-detection";
 import { getSiteSettings } from "@/shared/lib/site-settings";
+
+export const metadata: Metadata = {
+  title: "Account | RioAnimePlay",
+  description: "Manage your RioAnimePlay account, preferences, and saved anime."
+};
 
 type AccountPageProps = {
   searchParams?: Promise<{ error?: string; welcome?: string }>;

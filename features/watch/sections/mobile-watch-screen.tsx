@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { formatDecimalScore } from "@/entities/anime/lib/formatters";
 import type { WatchAnimeItem } from "@/entities/anime/model/types";
+import { useWatchDocumentTitle } from "@/features/watch/lib/use-watch-document-title";
 import { SmartVideoPlayer } from "@/features/watch/sections/smart-video-player";
 import {
   getSavedEpisode,
@@ -32,6 +33,8 @@ export function MobileWatchScreen({ anime }: MobileWatchScreenProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const playerSectionRef = useRef<HTMLElement>(null);
   const episodeNumbers = anime.episodeNumbers;
+
+  useWatchDocumentTitle(anime.title, selectedEpisode);
 
   useEffect(() => {
     function refreshLibraryState() {

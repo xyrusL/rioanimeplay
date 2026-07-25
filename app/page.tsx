@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { headers } from "next/headers";
 
 import { auth } from "@/auth";
@@ -8,6 +9,11 @@ import { ResponsiveRender } from "@/features/mobile/shared/responsive-render";
 import { isLikelyMobileUserAgent } from "@/shared/lib/mobile-detection";
 import { getSiteSettings } from "@/shared/lib/site-settings";
 import { ScheduledAnnouncementModal } from "@/shared/ui/scheduled-announcement-modal";
+
+export const metadata: Metadata = {
+  title: "Watch Anime Online | RioAnimePlay",
+  description: "Discover anime, browse available episodes, and keep your favorite titles close with RioAnimePlay."
+};
 
 export const dynamic = "force-dynamic";
 

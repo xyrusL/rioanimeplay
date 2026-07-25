@@ -51,7 +51,11 @@ function YouTubePlayer({ source, title }: { source: Extract<ResolvedVideoSource,
       player = new Plyr(playerRef.current, {
         autoplay: false,
         controls: ["play-large", "play", "progress", "current-time", "mute", "volume", "settings", "fullscreen"],
-        youtube: { noCookie: true, rel: 0, modestbranding: 1 }
+        quality: {
+          default: 1080,
+          options: [1080, 720, 576, 480, 360, 240]
+        },
+        youtube: { noCookie: true, rel: 0, modestbranding: 1, vq: "hd1080" }
       });
     });
 

@@ -12,7 +12,7 @@ import { MaterialIcon } from "@/shared/ui/icons/material-icon";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "Admin | RioAnime",
+  title: "Admin | RioAnimePlay",
   description: "RioAnime API administration console"
 };
 

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { headers } from "next/headers";
 
 import { auth } from "@/auth";
@@ -25,6 +26,11 @@ import { MobileFilterScreen } from "@/features/mobile/filter/mobile-filter-scree
 import { ResponsiveRender } from "@/features/mobile/shared/responsive-render";
 import { isLikelyMobileUserAgent } from "@/shared/lib/mobile-detection";
 import { ScrollToTopButton } from "@/shared/ui/scroll-to-top-button";
+
+export const metadata: Metadata = {
+  title: "Advanced Anime Filter | RioAnimePlay",
+  description: "Filter the RioAnimePlay catalog by title, genre, season, year, and format."
+};
 
 export const dynamic = "force-dynamic";
 

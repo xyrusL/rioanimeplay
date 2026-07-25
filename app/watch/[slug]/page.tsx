@@ -1,5 +1,7 @@
+import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+import { cache } from "react";
 
 import { ResponsiveRender } from "@/features/mobile/shared/responsive-render";
 import { getWatchPageData } from "@/features/watch/model/watch-page-data";
@@ -16,17 +18,42 @@ type WatchPageProps = {
   }>;
 };
 
+const getCachedWatchPageData = cache(getWatchPageData);
+
+function decodeSlug(routeSlug: string) {
+  try {
+    return decodeURIComponent(routeSlug);
+  } catch {
+    return null;
+  }
+}
+
+export async function generateMetadata({ params }: WatchPageProps): Promise<Metadata> {
+  const { slug: routeSlug } = await params;
+  const slug = decodeSlug(routeSlug);
+  if (!slug) return {};
+
+  const result = await getCachedWatchPageData(slug);
+  if (result.status === "available") {
+    const episodeNumber = result.anime.episodeNumbers[0] ?? 1;
+    return { title: `${result.anime.title} - EP ${episodeNumber} | RioAnimePlay` };
+  }
+
+  if (result.status === "locked") {
+    return { title: `${result.title} | RioAnimePlay` };
+  }
+
+  return {};
+}
+
 export default async function WatchPage({ params }: WatchPageProps) {
   const headerStore = await headers();
   const initialIsMobile = isLikelyMobileUserAgent(headerStore.get("user-agent") ?? "");
   const { slug: routeSlug } = await params;
-  let slug: string;
-  try {
-    slug = decodeURIComponent(routeSlug);
-  } catch {
-    notFound();
-  }
-  const result = await getWatchPageData(slug);
+  const slug = decodeSlug(routeSlug);
+  if (!slug) notFound();
+
+  const result = await getCachedWatchPageData(slug);
 
   if (result.status === "not-found") {
     notFound();

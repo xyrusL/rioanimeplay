@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -6,6 +7,11 @@ import { SiteFooter } from "@/features/home/sections/site-footer";
 import { SiteHeader } from "@/features/home/sections/site-header";
 import { MaterialIcon } from "@/shared/ui/icons/material-icon";
 import { ScrollToTopButton } from "@/shared/ui/scroll-to-top-button";
+
+export const metadata: Metadata = {
+  title: "Anime A-Z List | RioAnimePlay",
+  description: "Browse the complete RioAnimePlay anime catalog alphabetically."
+};
 
 export const dynamic = "force-dynamic";
 
