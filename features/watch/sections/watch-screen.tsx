@@ -111,7 +111,7 @@ export function WatchScreen({ anime }: WatchScreenProps) {
           episodeNumber={selectedEpisode}
           poster={anime.bannerImage ?? anime.coverImage}
           title={anime.title}
-          className="h-screen max-h-screen w-screen"
+          className="!aspect-video !h-auto !max-h-[100dvh] !w-[min(100dvw,177.7778dvh)]"
           reloadToken={playerReloadToken}
         />
       </main>
