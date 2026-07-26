@@ -68,7 +68,7 @@ const STORY: StoryStep[] = [
 
 const CONTACTS = [
   {
-    icon: "chat",
+    icon: "messenger",
     label: "Message us on",
     value: "Facebook",
     action: "Send message",
@@ -79,7 +79,7 @@ const CONTACTS = [
     actionClass: "bg-[#6257d9]/18 text-[#aaa2ff] hover:bg-[#6257d9]/30"
   },
   {
-    icon: "mail",
+    icon: "email",
     label: "Email us",
     value: "rioanime@dezely.com",
     action: "Send email",
@@ -90,7 +90,7 @@ const CONTACTS = [
     actionClass: "bg-[#d54d82]/18 text-[#f18bb1] hover:bg-[#d54d82]/30"
   },
   {
-    icon: "public",
+    icon: "facebook",
     label: "Visit our",
     value: "Facebook Page",
     action: "Go to page",
@@ -101,6 +101,33 @@ const CONTACTS = [
     actionClass: "bg-[#347ee5]/18 text-[#81b8ff] hover:bg-[#347ee5]/30"
   }
 ] as const;
+
+type ContactIconName = (typeof CONTACTS)[number]["icon"];
+
+function ContactIcon({ name }: { name: ContactIconName }) {
+  if (name === "messenger") {
+    return (
+      <svg aria-hidden="true" className="h-7 w-7" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2C6.48 2 2 6.15 2 11.26c0 2.91 1.46 5.51 3.73 7.2V22l3.4-1.87c.91.25 1.87.39 2.87.39 5.52 0 10-4.15 10-9.26S17.52 2 12 2Zm.99 12.47-2.54-2.72-4.97 2.72 5.46-5.81 2.61 2.72 4.91-2.72-5.47 5.81Z" />
+      </svg>
+    );
+  }
+
+  if (name === "facebook") {
+    return (
+      <svg aria-hidden="true" className="h-7 w-7" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.05V9.41c0-3.03 1.79-4.7 4.53-4.7 1.31 0 2.69.24 2.69.24v2.97h-1.52c-1.49 0-1.96.93-1.96 1.89v2.26h3.33l-.53 3.49h-2.8V24C19.61 23.1 24 18.1 24 12.07Z" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg aria-hidden="true" className="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2.5" y="4.5" width="19" height="15" rx="2" />
+      <path d="m4 7 8 6 8-6" />
+    </svg>
+  );
+}
 
 type AboutScreenProps = {
   authLockdown: SiteSettings["authLockdown"];
@@ -116,8 +143,8 @@ export function AboutScreen({ authLockdown, homePageData, member }: AboutScreenP
 
   return (
     <main className="about-page min-h-screen overflow-hidden text-[var(--text-primary)]">
-      <div className="site-shell mx-auto w-full max-w-[1280px] px-4 pb-6 sm:px-6 lg:px-8 lg:pb-8">
-        <HomeNavigationHeader authLockdown={authLockdown} member={member} />
+      <div className="site-shell about-shell mx-auto w-full max-w-[1280px] px-4 pb-6 sm:px-6 lg:px-8 lg:pb-8">
+        <HomeNavigationHeader authLockdown={authLockdown} member={member} mobileVariant="about" />
 
         <section className="about-hero relative isolate grid min-h-[500px] items-center gap-10 overflow-hidden py-14 lg:grid-cols-[.9fr_1.1fr] lg:py-20">
           {heroBackdrop ? (
@@ -163,7 +190,7 @@ export function AboutScreen({ authLockdown, homePageData, member }: AboutScreenP
           ) : null}
         </section>
 
-        <section aria-labelledby="principles-title" className="relative z-10 -mt-3 overflow-hidden rounded-[26px] border border-[var(--line-soft)] bg-[rgba(16,16,20,.86)] shadow-[0_24px_70px_rgba(0,0,0,.35)] backdrop-blur-xl">
+        <section aria-labelledby="principles-title" className="about-principles relative z-10 -mt-3 overflow-hidden rounded-[26px] border border-[var(--line-soft)] bg-[rgba(16,16,20,.86)] shadow-[0_24px_70px_rgba(0,0,0,.35)] backdrop-blur-xl">
           <h2 id="principles-title" className="sr-only">What you should know about RioAnimePlay</h2>
           <div className="grid sm:grid-cols-2 xl:grid-cols-4">
             {PRINCIPLES.map((principle) => (
@@ -205,7 +232,7 @@ export function AboutScreen({ authLockdown, homePageData, member }: AboutScreenP
           </ol>
         </section>
 
-        <section id="how-it-works" className="grid gap-8 overflow-hidden rounded-[26px] border border-[var(--line-strong)] bg-[linear-gradient(110deg,rgba(20,19,24,.98),rgba(16,15,20,.92))] p-7 shadow-[var(--card-shadow)] sm:p-10 lg:grid-cols-[1fr_340px] lg:items-center">
+        <section id="how-it-works" className="about-how-it-works grid gap-8 overflow-hidden rounded-[26px] border border-[var(--line-strong)] bg-[linear-gradient(110deg,rgba(20,19,24,.98),rgba(16,15,20,.92))] p-7 shadow-[var(--card-shadow)] sm:p-10 lg:grid-cols-[1fr_340px] lg:items-center">
           <div>
             <h2 className="font-display text-2xl font-extrabold tracking-[-0.035em] text-white sm:text-3xl">We Just Connect You to What <span className="text-[var(--accent-strong)]">You Love</span></h2>
             <p className="mt-5 max-w-[700px] text-sm leading-7 text-[var(--text-secondary)]">
@@ -230,7 +257,7 @@ export function AboutScreen({ authLockdown, homePageData, member }: AboutScreenP
           </div>
         </section>
 
-        <section aria-labelledby="contact-title" className="px-1 py-16 sm:px-5 sm:py-20 lg:px-8">
+        <section aria-labelledby="contact-title" className="about-contact px-1 py-16 sm:px-5 sm:py-20 lg:px-8">
           <p className="text-[0.7rem] font-extrabold uppercase tracking-[0.16em] text-[var(--accent-strong)]">Contact us</p>
           <h2 id="contact-title" className="mt-3 font-display text-3xl font-extrabold tracking-[-0.04em] text-white sm:text-4xl">We&apos;re Here to Help</h2>
           <p className="mt-4 text-sm text-[var(--text-secondary)]">If you have questions, suggestions, or just want to say hi, feel free to reach out.</p>
@@ -238,7 +265,7 @@ export function AboutScreen({ authLockdown, homePageData, member }: AboutScreenP
             {CONTACTS.map((contact) => (
               <article key={contact.value} className={`rounded-[22px] border border-[var(--line-soft)] bg-[var(--bg-card)] p-6 transition-[border-color,box-shadow,transform] hover:-translate-y-1 ${contact.cardClass}`}>
                 <div className="flex items-center gap-4">
-                  <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-full text-white ${contact.iconClass}`}><MaterialIcon className="text-[26px]" filled name={contact.icon} /></span>
+                  <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-full text-white ${contact.iconClass}`}><ContactIcon name={contact.icon} /></span>
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-white">{contact.label}</p>
                     <p className={`mt-1 truncate text-xs font-bold ${contact.valueClass}`}>{contact.value}</p>
@@ -252,7 +279,7 @@ export function AboutScreen({ authLockdown, homePageData, member }: AboutScreenP
           </div>
         </section>
 
-        <section className="relative mb-8 grid min-h-[240px] overflow-hidden rounded-[26px] border border-[var(--line-strong)] bg-[var(--bg-card-strong)] sm:grid-cols-[280px_1fr]">
+        <section className="about-thanks relative mb-8 grid min-h-[240px] overflow-hidden rounded-[26px] border border-[var(--line-strong)] bg-[var(--bg-card-strong)] sm:grid-cols-[280px_1fr]">
           {visualItems[5] ? (
             <div className="relative min-h-[220px] sm:min-h-full">
               <SensitiveImage fill isNsfw={visualItems[5].isNsfw} overlay="card" alt="" aria-hidden="true" className="object-cover object-top opacity-80" sizes="300px" src={visualItems[5].coverImage} />
@@ -268,7 +295,7 @@ export function AboutScreen({ authLockdown, homePageData, member }: AboutScreenP
           </div>
         </section>
 
-        <SiteFooter variant="landing" />
+        <SiteFooter variant="about" />
       </div>
     </main>
   );

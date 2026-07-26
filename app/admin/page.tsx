@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { auth, signIn } from "@/auth";
+import { signIn } from "@/auth";
 import { loginAdminAction } from "@/app/admin/actions";
 import { fetchDashboardData } from "@/entities/anime/api/catalog";
 import { AdminDashboard } from "@/features/dashboard/admin-dashboard";
@@ -22,10 +22,10 @@ type AdminPageProps = {
 
 async function signInAdminWithGoogle() {
   "use server";
-  await signIn("google", { redirectTo: "/admin" });
+  await signIn("google", { redirectTo: "/admin?error=account" });
 }
 
-function AdminLogin({ error, signedInEmail }: { error?: string; signedInEmail?: string | null }) {
+function AdminLogin({ error }: { error?: string }) {
   return (
     <main className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
       <div className="relative isolate mx-auto flex min-h-screen w-full max-w-[1600px] items-center justify-center overflow-hidden px-4 py-8 sm:px-6 xl:px-8">
@@ -58,7 +58,7 @@ function AdminLogin({ error, signedInEmail }: { error?: string; signedInEmail?: 
               <h1 className="mt-3 text-[2rem] leading-[1.02] font-semibold text-white">Welcome Back</h1>
               <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">Sign in to continue to the RioAnime administration console.</p>
             </div>
-            {error === "account" ? <div className="mt-5 rounded-[18px] border border-[rgba(255,120,150,0.26)] bg-[rgba(255,120,150,0.08)] px-4 py-3 text-sm text-[#ffc3d1]">Invalid admin account{signedInEmail ? `: ${signedInEmail}` : "."} This account does not have active administrator access.</div> : null}
+            {error === "account" ? <div className="mt-5 rounded-[18px] border border-[rgba(255,120,150,0.26)] bg-[rgba(255,120,150,0.08)] px-4 py-3 text-sm text-[#ffc3d1]">This Google account does not have administrator access. Choose another account and try again.</div> : null}
             <form action={signInAdminWithGoogle} className="mt-5">
               <button type="submit" className="inline-flex w-full items-center justify-center gap-2 rounded-[14px] border border-white/80 bg-white px-4 py-3.5 text-sm font-semibold text-[#171721] shadow-[0_16px_34px_rgba(0,0,0,0.24)] transition-transform hover:-translate-y-0.5"><MaterialIcon className="text-[19px]" name="account_circle" />Continue with Google</button>
             </form>
@@ -84,8 +84,8 @@ function AdminLogin({ error, signedInEmail }: { error?: string; signedInEmail?: 
 }
 
 export default async function AdminPage({ searchParams }: AdminPageProps) {
-  const [params, authenticated, googleSession] = await Promise.all([searchParams, isAdminAuthenticated(), auth()]);
-  if (!authenticated) return <AdminLogin error={params?.error ?? (googleSession?.user ? "account" : undefined)} signedInEmail={googleSession?.user?.email} />;
+  const [params, authenticated] = await Promise.all([searchParams, isAdminAuthenticated()]);
+  if (!authenticated) return <AdminLogin error={params?.error} />;
 
   const activeTab = resolveAdminTab(params?.tab);
   const [data, settings, profile] = await Promise.all([

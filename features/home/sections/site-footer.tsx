@@ -4,7 +4,7 @@ import { MaterialIcon } from "@/shared/ui/icons/material-icon";
 import { SiteBrand } from "@/shared/ui/site-brand";
 
 type SiteFooterProps = {
-  variant?: "compact" | "landing";
+  variant?: "compact" | "landing" | "about";
 };
 
 const FOOTER_GROUPS = [
@@ -36,6 +36,28 @@ const FOOTER_GROUPS = [
 ];
 
 export function SiteFooter({ variant = "compact" }: SiteFooterProps) {
+  if (variant === "about") {
+    return (
+      <>
+        <footer className="about-mobile-footer -mx-4 border-t border-[var(--line-soft)] px-5 pb-5 pt-8 sm:hidden">
+          <SiteBrand compact href="/" />
+          <p className="mt-5 max-w-[280px] text-xs leading-6 text-[var(--text-secondary)]">A simple place where anime lovers connect and enjoy.</p>
+          <div className="mt-5 flex gap-3">
+            <a href="https://www.facebook.com/rioanimeplay" target="_blank" rel="noreferrer" aria-label="Facebook" className="grid h-11 w-11 place-items-center rounded-full border border-[var(--line-soft)] bg-[var(--bg-card)] text-[#64a9ff]"><MaterialIcon className="text-[21px]" filled name="public" /></a>
+            <a href="https://m.me/rioanimeplay" target="_blank" rel="noreferrer" aria-label="Messenger" className="grid h-11 w-11 place-items-center rounded-full border border-[var(--line-soft)] bg-[var(--bg-card)] text-[#d86bdf]"><MaterialIcon className="text-[21px]" filled name="chat" /></a>
+            <a href="mailto:rioanime@dezely.com" aria-label="Email" className="grid h-11 w-11 place-items-center rounded-full border border-[var(--line-soft)] bg-[var(--bg-card)] text-[var(--accent-strong)]"><MaterialIcon className="text-[21px]" filled name="mail" /></a>
+          </div>
+          <nav aria-label="Footer navigation" className="mt-6 divide-y divide-[var(--line-soft)] border-y border-[var(--line-soft)]">
+            {FOOTER_GROUPS.map((group) => <Link key={group.title} href={group.links[0].href} className="flex items-center justify-between py-4 text-xs font-bold text-white"><span>{group.title}</span><MaterialIcon className="text-[18px]" name="chevron_right" /></Link>)}
+            <Link href="/home#popular-title" className="flex items-center justify-between py-4 text-xs font-bold text-white"><span>Top Anime</span><MaterialIcon className="text-[18px]" name="chevron_right" /></Link>
+          </nav>
+          <p className="pt-7 text-center text-[0.65rem] text-[var(--text-muted)]">© 2026 RioAnimePlay. All rights reserved.</p>
+        </footer>
+        <div className="hidden sm:block"><SiteFooter variant="landing" /></div>
+      </>
+    );
+  }
+
   if (variant === "landing") {
     return (
       <footer className="border-t border-[var(--line-soft)] pb-3 pt-7">

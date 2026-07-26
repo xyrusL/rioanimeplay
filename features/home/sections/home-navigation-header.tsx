@@ -16,9 +16,10 @@ const NAV_ITEMS = [
 type HomeNavigationHeaderProps = {
   authLockdown: SiteSettings["authLockdown"];
   member: { name: string; email: string; image: string | null } | null;
+  mobileVariant?: "default" | "about";
 };
 
-export function HomeNavigationHeader({ authLockdown, member }: HomeNavigationHeaderProps) {
+export function HomeNavigationHeader({ authLockdown, member, mobileVariant = "default" }: HomeNavigationHeaderProps) {
   const accountControl = member ? (
     <Link
       href="/account"
@@ -44,7 +45,7 @@ export function HomeNavigationHeader({ authLockdown, member }: HomeNavigationHea
 
   return (
     <>
-      <header className="relative z-[230] flex min-h-20 items-center justify-between gap-5 border-b border-[var(--line-soft)] py-4">
+      <header className={`relative z-[230] flex min-h-20 items-center justify-between gap-5 border-b border-[var(--line-soft)] py-4 ${mobileVariant === "about" ? "about-mobile-header" : ""}`}>
         <SiteBrand compact href="/" />
 
         <nav aria-label="Primary navigation" className="home-primary-nav relative hidden items-stretch self-stretch lg:flex">
@@ -62,10 +63,21 @@ export function HomeNavigationHeader({ authLockdown, member }: HomeNavigationHea
         </nav>
 
         <div className="hidden min-w-0 flex-1 justify-end xl:flex">{accountControl}</div>
-        <div className="min-w-0 xl:hidden">{accountControl}</div>
+        <div className={`min-w-0 xl:hidden ${mobileVariant === "about" ? "max-sm:hidden" : ""}`}>{accountControl}</div>
+        {mobileVariant === "about" ? (
+          <details className="about-mobile-menu relative sm:hidden">
+            <summary aria-label="Open navigation" className="grid h-10 w-10 list-none place-items-center rounded-lg text-white [&::-webkit-details-marker]:hidden">
+              <MaterialIcon className="text-[27px]" name="menu" />
+            </summary>
+            <nav aria-label="About page navigation" className="absolute right-0 top-12 grid w-44 overflow-hidden rounded-2xl border border-[var(--line-strong)] bg-[rgba(18,18,23,.98)] p-2 shadow-[0_18px_50px_rgba(0,0,0,.55)] backdrop-blur-xl">
+              {NAV_ITEMS.map((item) => <Link key={item.label} href={item.href} className="rounded-xl px-4 py-3 text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--accent-soft)] hover:text-white">{item.label}</Link>)}
+              <Link href="/account" className="rounded-xl px-4 py-3 text-sm font-semibold text-[var(--accent-strong)]">{member ? "Account" : "Sign in"}</Link>
+            </nav>
+          </details>
+        ) : null}
       </header>
 
-      <nav aria-label="Mobile navigation" className="relative z-[220] -mx-1 flex gap-1 overflow-x-auto py-3 lg:hidden">
+      <nav aria-label="Mobile navigation" className={`relative z-[220] -mx-1 gap-1 overflow-x-auto py-3 lg:hidden ${mobileVariant === "about" ? "hidden sm:flex" : "flex"}`}>
         {NAV_ITEMS.map((item) => (
           <Link
             key={item.label}
