@@ -15,10 +15,6 @@ export function toAnimeSlug(value: string) {
     .replace(/-{2,}/g, "-");
 }
 
-export function slugToSearchText(slug: string) {
-  return slug.replace(/-/g, " ").trim();
-}
-
 export function matchesAnimeSlug(title: SluggableTitle, slug: string) {
   return [title.english, title.userPreferred, title.romaji, title.native]
     .filter(Boolean)

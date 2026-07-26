@@ -25,7 +25,6 @@
     "plyr": "^3.8.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-paginate": "^8.3.0",
     "recharts": "^3.9.2"
   },
   "devDependencies": {

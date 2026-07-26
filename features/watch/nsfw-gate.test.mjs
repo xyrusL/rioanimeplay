@@ -14,7 +14,7 @@ test("public API predicate requires published, public, and not deleted", () => {
   assert.match(worker, /content_status = 'published'/);
   assert.match(worker, /visibility = 'public'/);
   assert.match(worker, /deleted_at IS NULL/);
-  for (const handler of ["handleHome", "handleBrowse", "handleAlphabeticalCatalog", "handleSearch", "getAnimeRecord", "handleEpisodes"]) {
+  for (const handler of ["handleHome", "handleBrowse", "handleAlphabeticalCatalog", "getAnimeRecord", "handleEpisodes"]) {
     const start = worker.indexOf(`function ${handler}`) >= 0 ? worker.indexOf(`function ${handler}`) : worker.indexOf(`async function ${handler}`);
     assert.ok(start >= 0, `missing ${handler}`);
     assert.ok(worker.slice(start, start + 2500).includes("PUBLIC_ANIME_PREDICATE"), `${handler} must use the public predicate`);

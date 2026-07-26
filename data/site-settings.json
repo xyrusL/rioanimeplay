@@ -1,10 +1,6 @@
 {
   "themePreset": "dark-rose",
   "fontPreset": "lexend-default",
-  "announcement": {
-    "title": "Welcome to RioAnimePlay",
-    "message": "Browse the RioAnime library, search titles, explore genres, and open available episodes from one place."
-  },
   "authLockdown": {
     "enabled": false,
     "message": "Login and registration are currently unavailable."

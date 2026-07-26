@@ -9,9 +9,9 @@ The project is organized around feature composition:
 - `app/` defines routes, page-level orchestration, layout wiring, and server entrypoints.
 - `features/` contains page and screen composition for home, browse, watch, search, and mobile-specific experiences.
 - `entities/anime/` owns the RioAnime catalog client, domain mapping, formatting helpers, slugs, and shared anime-facing types.
-- `shared/` contains cross-cutting UI primitives and runtime utilities such as theme settings, admin auth, mobile detection, and client helpers.
+- `shared/` contains cross-cutting UI primitives and runtime utilities such as local settings, admin auth, mobile detection, caching, and client helpers.
 - `data/` stores persisted local site settings used by the admin surface and public site.
-- `app/api/` and `pages/api/` contain server-side proxies that keep the Worker API key out of browser code.
+- `app/api/` contains server-side proxies that keep the Worker API key out of browser code.
 - `worker.js` owns public catalog reads, account-library persistence, admin mutations, edge caching, revisions, and D1 access.
 
 ## System Map
@@ -52,7 +52,8 @@ Primary route entrypoints and layout configuration.
 - `account/page.tsx` renders Google sign-in, the signed-in account state, and auth-lockdown messaging.
 - `bookmarks/page.tsx` currently serves the mobile bookmarks experience backed by the browse catalog.
 - `api/library/route.ts` authenticates the NextAuth session and relays private library reads and writes to the Worker without exposing the deployment key.
-- `admin/page.tsx` is the operations surface for theme, announcement, auth lockdown, and anime visibility settings.
+- `admin/page.tsx` is the authentication boundary and entrypoint for the D1-backed operations console.
+- `api/watch-episode/route.ts` privately relays the selected episode-source request to the Worker.
 
 ### `features/`
 
@@ -61,7 +62,7 @@ Feature-level composition, loaders, and route-specific UI.
 - `features/home/` owns home page data shaping and desktop sections such as hero, grid, sidebars, and shared site chrome.
 - `features/browse/` owns catalog assembly, filtering, sorting, pagination inputs, and desktop filter results UI.
 - `features/watch/` owns watch-page data loading and available/unavailable watch screens.
-- `features/search/` owns autocomplete ranking logic and search suggestion assembly.
+- `features/search/` owns compact search-index assembly, browser validation, and local autocomplete ranking.
 - `features/mobile/` owns the mobile shells, bottom navigation, and mobile-first screens for home, filter, bookmarks, account, and shared responsive behavior.
 
 ### `entities/anime/`
@@ -82,7 +83,7 @@ Cross-cutting runtime and UI helpers.
 - `shared/lib/watch-storage.ts` owns browser bookmarks, episode progress, dirty/synced metadata, and library change notifications.
 - `shared/lib/mobile-detection.ts` performs server-side mobile user-agent guessing.
 - `shared/ui/user-library-sync.tsx` hydrates signed-in library state, preserves first-sign-in local data, debounces server updates, and retries after connectivity returns.
-- `shared/ui/` also contains reusable building blocks such as panels, select fields, action forms, route progress, lockdown action messaging, icons, and scroll helpers.
+- `shared/ui/` also contains reusable building blocks such as panels, custom selects, modals, route progress, lockdown messaging, icons, and scroll helpers.
 
 ## Route Entry Points
 
@@ -119,7 +120,7 @@ Entry: `app/watch/[slug]/page.tsx`
 - checks local site rules by slug first
 - hides `private` titles as not found
 - returns a locked state immediately for `locked` titles
-- resolves the public Worker record by URL slug, with catalog fallback for legacy slugs
+- resolves the public Worker record by URL slug, with a title-derived catalog fallback
 - maps the matched result into `WatchAnimeItem`
 - loads episode-number metadata separately from video sources
 - re-checks title-based rules after mapping
@@ -145,7 +146,6 @@ That catalog powers:
 - the A-Z directory
 - the random redirect
 - bookmarks screen content
-- admin anime rule selection
 
 ### Account route
 
@@ -156,7 +156,7 @@ Entry: `app/account/page.tsx`
 - redirects Google sign-in and sign-out back to the account route
 - reads site settings to disable new sign-ins when auth lockdown is active
 
-The NextAuth session is the identity boundary for personal library access. D1 member provisioning happens lazily on the first authenticated library request, so Google users do not need a separate registration form.
+The NextAuth session is the identity boundary for personal library access. Normal Google sign-in creates an active D1 member when the email is new; returning users reuse their existing account. Admin Google sign-in remains restricted to existing active accounts with the `admin` role.
 
 ### Account library synchronization
 
@@ -172,7 +172,7 @@ The synchronization sequence is:
 2. The Next route calls `auth()` and returns `401` without a signed-in Google email.
 3. For a signed-in user, the Next route forwards the encoded email and display name with the private `RIOANIME_API_KEY`.
 4. The Worker accepts this route only when the provided key matches the Worker deployment `API_KEY`.
-5. The Worker creates or reuses the D1 account identified by its case-insensitive email and rejects disabled accounts.
+5. The Worker reuses the D1 account identified by its case-insensitive email and rejects disabled accounts.
 6. The Worker returns bookmarks and episode progress using numeric catalog source IDs, matching the existing browser storage format.
 7. On first sign-in in a browser, bookmarks and watched episodes are merged so existing local data is preserved; the server's last episode wins when both sides have progress.
 8. On later clean loads for the same account, the server copy replaces local state. Locally dirty state is uploaded instead, preserving offline changes.
@@ -199,12 +199,7 @@ Operational limits protect the Worker and D1 request budget:
 - at most 10,000 watched episode numbers per anime
 - source IDs and episode numbers must be positive safe integers within configured bounds
 
-Deployment status as of 2026-07-18:
-
-- remote D1 migration `0021_account_library.sql` is applied
-- the Worker custom domain is configured as `api.rioanime.dezely.com`
-- direct requests without the private Worker key return `404`
-- the Next.js frontend synchronization code is implemented in the worktree but still requires the normal Git-based frontend deployment
+The canonical Worker host is `api.rioanime.dezely.com`. Direct protected requests without an accepted API key return `404`.
 
 ### Search and browser cache
 
@@ -213,9 +208,8 @@ The active autocomplete path is browser-local:
 - `app/api/public/manifest` returns catalog, episode, and announcement revisions once per browser visit.
 - `app/api/public/search-index` returns the compact public search index only when the catalog revision changed or no valid index exists.
 - `features/search/model/browser-anime-search.ts` validates the index and ranks exact, alternate-title, prefix, boundary, and fuzzy matches locally.
-- `pages/api/search.ts` remains as a compatibility endpoint but is no longer called for each autocomplete query.
 
-`shared/lib/public-resource-cache.ts` owns IndexedDB validation, checksums, resource schema versions, optional migrations, atomic replacement, stale fallback, cross-tab change notices, and a 25 MB LRU target. Invalid entries are removed individually; an unusable database is recreated automatically.
+`shared/lib/public-resource-cache.ts` owns protocol-v2 IndexedDB validation, checksums, resource schema versions, optional migrations, atomic replacement, stale fallback, cross-tab change notices, and a 25 MB LRU target. Invalid entries are removed individually; an unusable database is recreated automatically.
 
 Announcements use the same cache manager with a 30-second TTL because scheduled visibility can change without a database mutation. Search indexes use the manifest revision as their primary invalidation signal.
 
@@ -225,25 +219,33 @@ Public Worker routes check the Cloudflare Cache API before loading catalog, anim
 
 Successful request metrics are sampled at 2% and weighted to preserve approximate totals; errors are recorded immediately. Policy usage remains exact only for keys with an active request, daily, or bandwidth limit. Public Vercel proxies use shared `s-maxage`, stale revalidation, and stale-on-error headers, while account, admin, and library responses remain private and uncached.
 
+### Current D1 boundaries
+
+- `anime`, `episodes`, `featured_posts`, and the announcement tables own public content.
+- `accounts`, library tables, view history, and reactions own member state and analytics.
+- `api_keys`, `api_key_domain_settings`, and `api_key_allowed_domains` own per-key access policy.
+- The former global `domain_lock_settings` and `allowed_domains` tables are removed by `0026_drop_global_domain_lock.sql` after migration into the per-key schema.
+- Migration files are append-only history. Schema removal or data conversion must be implemented in a new numbered migration.
+
 ## Settings and Admin Control
 
 ### Settings persistence
 
 `shared/lib/site-settings.ts` is the source of truth for local runtime configuration.
 
-Persisted settings include:
+Persisted local settings include:
 
 - `themePreset`
 - `fontPreset`
-- `announcement`
 - `authLockdown`
 - `animeRules`
+- `adminAppearance`
 
 The module:
 
 - creates `data/site-settings.json` if it is missing
 - normalizes persisted values at read time
-- exposes helper functions for lookup and update workflows
+- exposes helper functions used by public visibility checks and admin appearance persistence
 
 ### Admin route and mutations
 
@@ -251,8 +253,8 @@ The module:
 
 - Login is verified against the D1 account database and stored in a signed server session.
 - Browser admin requests use `app/api/dashboard/*` proxies; admin API responses remain `no-store`.
-- Content, featured posts, announcements, account policy, and recycle-bin operations are handled by authenticated Worker routes and recorded in the activity log.
-- Local server actions remain responsible for site appearance and other `site-settings.json` values, with `revalidatePath()` after changes.
+- Content, featured posts, announcements, content notices, account policy, per-key domain locks, and recycle-bin operations are handled by authenticated Worker routes and recorded in the activity log.
+- The active local server action persists only the admin console appearance and revalidates `/admin`.
 - Public content mutations increment resource revisions so returning browsers refresh affected cache groups.
 
 ### Anime visibility rules
@@ -268,7 +270,6 @@ Enforcement points:
 - home and browse loaders filter out `private` titles
 - watch loader converts `private` to not found
 - watch loader converts `locked` to a dedicated unavailable state
-- admin uses the browse catalog to select titles for rule changes
 
 ## Themes and Styling
 
@@ -283,14 +284,14 @@ The theme system works by:
 
 Operational impact:
 
-- changing theme or font in admin updates the public site without code changes
+- persisted theme and font presets are applied by `app/layout.tsx`; the current admin appearance panel controls the console independently
 - components consume semantic variables such as `--bg-base`, `--accent`, and `--line-soft` instead of hard-coded colors where theming matters
 
 ## Key Interfaces
 
 ### Catalog access
 
-`entities/anime/api/catalog.ts` exposes server-only home, browse, alphabetical, detail, search, episode-number, and episode-source reads. Public metadata reads use bounded upstream timeouts and Worker/Next caching where appropriate. Episode video-source reads remain `no-store`.
+`entities/anime/api/catalog.ts` exposes server-only home, browse, alphabetical, detail, episode-number, and episode-source reads. Public metadata reads use bounded upstream timeouts and Worker/Next caching where appropriate. Episode video-source reads remain `no-store`.
 
 ### Shared UI models
 
@@ -315,8 +316,9 @@ These are the contracts to update when adding a catalog field to UI components.
 | Change account library synchronization | `shared/ui/user-library-sync.tsx` | `shared/lib/watch-storage.ts`, `app/api/library/route.ts`, `worker.js` |
 | Change account library D1 storage | `migrations/0021_account_library.sql` | `worker.js`, `anime_view_history` |
 | Change browse filtering or A-Z behavior | `features/browse/model/filter-utils.ts` | `features/browse/model/browse-page-data.ts` |
-| Add or update a theme preset | `app/theme.css` | `shared/lib/site-settings.ts`, `app/admin/page.tsx` |
-| Change admin persistence behavior | `app/admin/actions.ts` | `shared/lib/site-settings.ts`, `shared/lib/admin-auth.ts` |
+| Add or update a theme preset | `app/theme.css` | `shared/lib/appearance-presets.ts`, `shared/lib/site-settings.ts` |
+| Change admin console appearance persistence | `app/admin/actions.ts` | `shared/lib/site-settings.ts`, `shared/lib/admin-auth.ts` |
+| Change D1 dashboard operations | `features/dashboard/*` | `app/api/dashboard/*`, `worker.js` |
 | Add catalog fields to the UI | `worker.js` | `entities/anime/api/catalog.ts`, `entities/anime/lib/mappers.ts` |
 
 ## Maintenance Notes
@@ -329,10 +331,10 @@ These are the contracts to update when adding a catalog field to UI components.
 
 ### Add a new theme preset
 
-- add the preset key to `THEME_PRESETS`
-- add the admin label in `app/admin/page.tsx`
+- add the preset key to `shared/lib/appearance-presets.ts`
 - define the token overrides in `app/theme.css`
-- confirm the updated preset survives round-tripping through `site-settings.json`
+- update the persisted setting through an explicit supported workflow
+- confirm the preset survives normalization through `site-settings.json`
 
 ### Add a new public cached resource
 
@@ -361,3 +363,5 @@ Update this document and the desktop/mobile flow documents whenever any of the f
 - settings persistence behavior
 - mobile versus desktop rendering strategy
 - search or watch resolution behavior
+
+The dated plans and specifications under `docs/superpowers/` are historical implementation records. Update these three top-level documents for the current system rather than rewriting completed historical records.

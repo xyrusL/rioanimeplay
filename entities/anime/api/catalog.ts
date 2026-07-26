@@ -51,10 +51,6 @@ type AlphabeticalCatalogResponse = {
   anime: CatalogMedia[];
 };
 
-type SearchResponse = {
-  media: CatalogMedia[];
-};
-
 type EpisodeNumbersResponse = {
   animeId: string;
   episodeNumbers: number[];
@@ -165,15 +161,6 @@ export async function fetchAnimeById(animeId: string) {
 
 export function fetchDashboardData() {
   return fetchRioAnimeApi<DashboardResponse>("/v1/dashboard");
-}
-
-export async function searchAnimeByTitle(search: string, perPage = 10) {
-  const params = new URLSearchParams({
-    q: search,
-    limit: `${Math.min(Math.max(perPage, 1), 20)}`
-  });
-  const result = await fetchRioAnimeApi<SearchResponse>(`/v1/search?${params}`);
-  return result.media;
 }
 
 export async function fetchAnimeEpisodeNumbers(animeId: string) {

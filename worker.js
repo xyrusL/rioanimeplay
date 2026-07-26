@@ -38,7 +38,6 @@ export const TRACKED_API_ROUTES = [
   "/v1/home",
   "/v1/browse",
   "/v1/anime/a-z",
-  "/v1/search",
   "/v1/cache-manifest",
   "/v1/announcements",
   "/v1/auth/admin-login",
@@ -330,37 +329,6 @@ function normalizeAnnouncementDate(value) {
   return new Date(value).toISOString();
 }
 
-async function parseAnnouncementInput(request, env, origin) {
-  const parsed = await parseJsonBody(request, origin);
-  if (parsed.response) return parsed;
-  const body = parsed.data ?? {};
-  const placement = body.placement;
-  const scope = placement === "post_modal" ? "anime" : "global";
-  const animeId = scope === "anime" ? String(body.animeId ?? "").trim() : null;
-  const title = typeof body.title === "string" ? body.title.trim() : "";
-  const message = typeof body.message === "string" ? body.message.trim() : "";
-  const startsAt = placement === "home_inline" ? null : normalizeAnnouncementDate(body.startsAt);
-  const endsAt = placement === "home_inline" ? null : normalizeAnnouncementDate(body.endsAt);
-  const scheduleType = body.scheduleType === "daily" ? "daily" : "once";
-  const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
-  const dailyStartsAt = scheduleType === "daily" && timePattern.test(body.dailyStartsAt ?? "") ? body.dailyStartsAt : null;
-  const dailyEndsAt = scheduleType === "daily" && timePattern.test(body.dailyEndsAt ?? "") ? body.dailyEndsAt : null;
-  const timezoneOffset = Number.isInteger(body.timezoneOffset) ? Math.max(-840, Math.min(840, body.timezoneOffset)) : 0;
-  if (!["home_inline", "home_modal", "post_modal"].includes(placement) || !title || title.length > 120 || !message || message.length > 5000) {
-    return { response: error("INVALID_ANNOUNCEMENT", "Scope, title, or message is invalid", 400, origin) };
-  }
-  if (startsAt === undefined || endsAt === undefined || (startsAt && endsAt && endsAt <= startsAt)) {
-    return { response: error("INVALID_SCHEDULE", "Enter a valid schedule with the end after the start", 400, origin) };
-  }
-  if (scheduleType === "daily" && dailyStartsAt && dailyEndsAt && dailyEndsAt <= dailyStartsAt) return { response: error("INVALID_SCHEDULE", "Daily end time must be after the start", 400, origin) };
-  if (scope === "anime") {
-    if (!isValidAnimeId(animeId)) return { response: error("INVALID_ANIME_ID", "Select a valid anime", 400, origin) };
-    const anime = await env.DB.prepare("SELECT 1 FROM anime WHERE anime_id = ?1 LIMIT 1").bind(animeId).first();
-    if (!anime) return { response: error("ANIME_NOT_FOUND", "The selected anime does not exist", 404, origin) };
-  }
-  return { data: { scope, placement, animeId, title, message, startsAt, endsAt, scheduleType, dailyStartsAt, dailyEndsAt, timezoneOffset, enabled: body.enabled === true } };
-}
-
 async function handlePublicAnnouncements(request, env, origin, ctx) {
   const searchParams = new URL(request.url).searchParams;
   const animeId = searchParams.get("animeId");
@@ -388,19 +356,16 @@ async function handlePublicAnnouncements(request, env, origin, ctx) {
       return { items };
     }, `custom-notification:${animeId ?? "homepage"}`);
   }
-  const postPlacement = placement === "post_modal";
-  if (postPlacement && !animeId) return json({ items: [] }, 200, origin, "private, max-age=30");
-  const scopeClause = postPlacement ? "n.anime_id = ?1" : "n.anime_id IS NULL";
   const statement = env.DB.prepare(
     `SELECT n.*, a.title AS anime_title FROM announcements n LEFT JOIN anime a ON a.anime_id = n.anime_id
-     WHERE n.enabled = 1 AND n.placement = ?${postPlacement ? 2 : 1} AND ${scopeClause}
+     WHERE n.enabled = 1 AND n.placement = ?1 AND n.anime_id IS NULL
        AND ((n.schedule_type = 'daily' AND (n.daily_starts_at IS NULL OR time(datetime('now', printf('%+d minutes', -n.timezone_offset))) >= n.daily_starts_at) AND (n.daily_ends_at IS NULL OR time(datetime('now', printf('%+d minutes', -n.timezone_offset))) < n.daily_ends_at)) OR (n.schedule_type = 'once' AND (n.starts_at IS NULL OR datetime(n.starts_at) <= datetime('now')) AND (n.ends_at IS NULL OR datetime(n.ends_at) > datetime('now'))))
      ORDER BY n.updated_at DESC LIMIT 1`
   );
   return cachedJson(request, origin, ctx, 30, async () => {
-    const rows = postPlacement ? await statement.bind(animeId, placement).all() : await statement.bind(placement).all();
+    const rows = await statement.bind(placement).all();
     return { items: rows.results.map(announcementItem) };
-  }, `announcement:${placement}:${animeId ?? "global"}`);
+  }, `announcement:${placement}:global`);
 }
 
 function contentNoticeTemplateItem(key, rows) {
@@ -446,10 +411,16 @@ async function handleAdminContentNotices(request, env, origin, accountId, path) 
   return json({ key, animeIds }, 200, origin);
 }
 
+function findSiteAnnouncement(env, id) {
+  const idClause = id ? "AND id = ?1" : "";
+  const statement = env.DB.prepare(`SELECT * FROM announcements WHERE placement = 'home_inline' AND anime_id IS NULL ${idClause} ORDER BY updated_at DESC LIMIT 1`);
+  return id ? statement.bind(id).first() : statement.first();
+}
+
 async function handleAdminAnnouncements(request, env, origin, accountId, path) {
   const id = path.startsWith("/v1/admin/announcements/") ? decodeURIComponent(path.slice("/v1/admin/announcements/".length)) : null;
   if (request.method === "GET" && !id) {
-    const siteAnnouncement = await env.DB.prepare("SELECT * FROM announcements WHERE id = 'legacy-homepage-announcement'").first();
+    const siteAnnouncement = await findSiteAnnouncement(env);
     const rows = await env.DB.prepare(`${notificationSelect} ORDER BY n.updated_at DESC`).all();
     return json({ siteAnnouncement: siteAnnouncement ? announcementItem(siteAnnouncement) : null, items: rows.results.map(customNotificationItem) }, 200, origin);
   }
@@ -465,7 +436,7 @@ async function handleAdminAnnouncements(request, env, origin, accountId, path) {
     return json({ id: newId }, 201, origin);
   }
   if (request.method === "PATCH" && id) {
-    if (id === "legacy-homepage-announcement") { const body = (await parseJsonBody(request, origin)); if (body.response) return body.response; const title=String(body.data?.title??"").trim(), message=String(body.data?.message??"").trim(); if(!title||!message) return error("INVALID_ANNOUNCEMENT","Title and message are required",400,origin); await env.DB.prepare("UPDATE announcements SET title=?1,message=?2,updated_by=?3,updated_at=datetime('now') WHERE id='legacy-homepage-announcement'").bind(title,message,accountId).run(); await incrementAnnouncementRevision(env); return json({id},200,origin); }
+    if (await findSiteAnnouncement(env, id)) { const body = (await parseJsonBody(request, origin)); if (body.response) return body.response; const title=String(body.data?.title??"").trim(), message=String(body.data?.message??"").trim(); if(!title||!message) return error("INVALID_ANNOUNCEMENT","Title and message are required",400,origin); await env.DB.prepare("UPDATE announcements SET title=?1,message=?2,updated_by=?3,updated_at=datetime('now') WHERE id=?4").bind(title,message,accountId,id).run(); await incrementAnnouncementRevision(env); return json({id},200,origin); }
     if (request.headers.get("X-Notification-Action") === "stop") { const result = await env.DB.prepare("UPDATE custom_notifications SET status='Stopped',updated_by=?1,updated_at=datetime('now') WHERE id=?2 AND status IN ('Scheduled','Active')").bind(accountId,id).run(); if(!result.meta.changes)return error("INVALID_STATUS","Only scheduled or active notifications can be stopped",409,origin); await incrementAnnouncementRevision(env); return json({id},200,origin); }
     if (request.headers.get("X-Notification-Action") === "draft") { const result = await env.DB.prepare("UPDATE custom_notifications SET status='Draft',updated_by=?1,updated_at=datetime('now') WHERE id=?2").bind(accountId,id).run(); if(!result.meta.changes)return error("NOT_FOUND","Notification not found",404,origin); await incrementAnnouncementRevision(env); return json({id},200,origin); }
     const parsed = await parseCustomNotificationInput(request, env, origin);
@@ -480,7 +451,7 @@ async function handleAdminAnnouncements(request, env, origin, accountId, path) {
     return json({ id }, 200, origin);
   }
   if (request.method === "DELETE" && id) {
-    if(id==='legacy-homepage-announcement') return error("PERMANENT_ANNOUNCEMENT","The site announcement cannot be deleted",400,origin);
+    if(await findSiteAnnouncement(env, id)) return error("PERMANENT_ANNOUNCEMENT","The site announcement cannot be deleted",400,origin);
     await env.DB.prepare("DELETE FROM custom_notification_anime WHERE notification_id=?1").bind(id).run(); await env.DB.prepare("DELETE FROM custom_notifications WHERE id = ?1").bind(id).run();
     await incrementAnnouncementRevision(env);
     return new Response(null, { status: 204, headers: responseHeaders(origin) });
@@ -1603,42 +1574,6 @@ async function handleAdminContent(request, env, origin, accountId, path) {
   return error("METHOD_NOT_ALLOWED", "Method not allowed", 405, origin);
 }
 
-async function handleAdminDomainLock(request, env, origin, accountId) {
-  if (request.method === "GET") {
-    const [setting, domains] = await env.DB.batch([
-      env.DB.prepare("SELECT enabled, updated_at FROM domain_lock_settings WHERE id = 1"),
-      env.DB.prepare("SELECT origin, created_at FROM allowed_domains ORDER BY origin ASC")
-    ]);
-    return json({
-      enabled: Boolean(setting.results[0]?.enabled),
-      updatedAt: setting.results[0]?.updated_at ?? null,
-      domains: domains.results.map((row) => ({ origin: row.origin, createdAt: row.created_at }))
-    }, 200, origin);
-  }
-  if (request.method !== "PATCH") return error("METHOD_NOT_ALLOWED", "Method not allowed", 405, origin);
-  const parsed = await parseJsonBody(request, origin);
-  if (parsed.response) return parsed.response;
-  const enabled = parsed.data?.enabled !== false;
-  if (!Array.isArray(parsed.data?.domains) || parsed.data.domains.length > 20) {
-    return error("INVALID_DOMAINS", "Provide no more than 20 allowed domains", 400, origin);
-  }
-  const domains = [...new Set(parsed.data.domains.map(normalizeOrigin))];
-  if (domains.includes(null) || (enabled && domains.length === 0)) {
-    return error("INVALID_DOMAINS", "Each domain must be a valid HTTP or HTTPS origin", 400, origin);
-  }
-  const statements = [
-    env.DB.prepare("DELETE FROM allowed_domains"),
-    ...domains.map((domain) => env.DB.prepare("INSERT INTO allowed_domains (origin) VALUES (?1)").bind(domain)),
-    env.DB.prepare("UPDATE domain_lock_settings SET enabled = ?1, updated_at = datetime('now') WHERE id = 1").bind(enabled ? 1 : 0),
-    env.DB.prepare(
-      `INSERT INTO activity_events (event_type, actor_id, entity_type, entity_id, summary)
-       VALUES ('domain_lock_updated', ?1, 'domain_lock', '1', ?2)`
-    ).bind(accountId, `Domain lock ${enabled ? "enabled" : "disabled"} with ${domains.length} allowed origins`)
-  ];
-  await env.DB.batch(statements);
-  return json({ enabled, domains: domains.map((domain) => ({ origin: domain })) }, 200, origin);
-}
-
 function analyticsConfig(value) {
   if (value === "24h") return { id: "24h", count: 24, hourly: true };
   if (value === "7d") return { id: "7d", count: 7, hourly: false };
@@ -1763,12 +1698,11 @@ async function handleAdminAnalytics(request, env, origin) {
 async function routeAdminManagement(request, env, origin, path) {
   const accountId = request.headers.get("X-RioAnime-Admin-Id");
   if (path === "/v1/admin/profile") return handleAdminProfile(request, env, origin, accountId);
-  if (path === "/v1/admin/members" || path.startsWith("/v1/admin/members/") || path === "/v1/admin/analytics" || path === "/v1/admin/domain-lock" || path === "/v1/admin/content" || path.startsWith("/v1/admin/content/") || path === "/v1/admin/content-notices" || path.startsWith("/v1/admin/content-notices/") || path === "/v1/admin/announcements" || path.startsWith("/v1/admin/announcements/")) {
+  if (path === "/v1/admin/members" || path.startsWith("/v1/admin/members/") || path === "/v1/admin/analytics" || path === "/v1/admin/content" || path.startsWith("/v1/admin/content/") || path === "/v1/admin/content-notices" || path.startsWith("/v1/admin/content-notices/") || path === "/v1/admin/announcements" || path.startsWith("/v1/admin/announcements/")) {
     if (!(await getAdminAccount(env, accountId))) return error("UNAUTHORIZED", "Administrator session is no longer valid", 401, origin);
     if (path === "/v1/admin/members") return handleAdminMembers(request, env, origin);
     if (path.startsWith("/v1/admin/members/")) return handleAdminMemberDetail(request, env, origin, decodeURIComponent(path.slice("/v1/admin/members/".length)));
     if (path === "/v1/admin/analytics") return handleAdminAnalytics(request, env, origin);
-    if (path === "/v1/admin/domain-lock") return handleAdminDomainLock(request, env, origin, accountId);
     if (path === "/v1/admin/content-notices" || path.startsWith("/v1/admin/content-notices/")) return handleAdminContentNotices(request, env, origin, accountId, path);
     if (path === "/v1/admin/announcements" || path.startsWith("/v1/admin/announcements/")) return handleAdminAnnouncements(request, env, origin, accountId, path);
     return handleAdminContent(request, env, origin, accountId, path);
@@ -1807,28 +1741,6 @@ async function handleAlphabeticalCatalog(request, env, ctx, origin) {
     ).all();
     return { anime: rows.results.map(toMedia) };
   }, "catalog-a-z-v1");
-}
-
-async function handleSearch(request, env, ctx, origin) {
-  const url = new URL(request.url);
-  const query = (url.searchParams.get("q") ?? "").trim();
-  const limit = Math.min(Math.max(Number.parseInt(url.searchParams.get("limit") ?? "20", 10) || 20, 1), 20);
-  if (query.length < 1 || query.length > 100) {
-    return error("INVALID_QUERY", "q must contain between 1 and 100 characters", 400, origin);
-  }
-
-  return cachedJson(request, origin, ctx, 300, async () => {
-    const pattern = `%${query}%`;
-    const rows = await env.DB.prepare(
-      `SELECT ${MEDIA_COLUMNS} FROM anime
-       WHERE (title LIKE ?1 COLLATE NOCASE OR title_english LIKE ?1 COLLATE NOCASE OR title_native LIKE ?1 COLLATE NOCASE)
-         AND ${PUBLIC_ANIME_PREDICATE}
-       ORDER BY CASE WHEN title = ?2 COLLATE NOCASE OR title_english = ?2 COLLATE NOCASE THEN 0 ELSE 1 END,
-                 popularity DESC, score DESC
-       LIMIT ?3`
-    ).bind(pattern, query, limit).all();
-    return { media: uniqueMedia(rows.results) };
-  }, "catalog-search-v1");
 }
 
 async function getAnimeRecord(env, slug) {
@@ -2150,7 +2062,6 @@ async function routeRequest(request, env, ctx, origin) {
   if (path === "/v1/home") return handleHome(request, env, ctx, origin);
   if (path === "/v1/browse") return handleBrowse(request, env, ctx, origin);
   if (path === "/v1/anime/a-z") return handleAlphabeticalCatalog(request, env, ctx, origin);
-  if (path === "/v1/search") return handleSearch(request, env, ctx, origin);
   if (path === "/v1/announcements") return handlePublicAnnouncements(request, env, origin, ctx);
 
   const episodeMatch = path.match(/^\/v1\/anime\/([^/]+)\/episodes$/);

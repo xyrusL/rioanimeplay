@@ -41,7 +41,6 @@ const CHANNEL_NAME = "rioanime-public-cache";
 
 let manifestPromise: Promise<PublicCacheManifest | null> | null = null;
 let repairPromise: Promise<void> | null = null;
-let legacyCleanupStarted = false;
 let latestStaleStatus = false;
 
 function checksum(value: unknown) {
@@ -218,10 +217,6 @@ function isManifest(value: unknown): value is PublicCacheManifest {
 }
 
 export function getPublicCacheManifest() {
-  if (!legacyCleanupStarted && typeof indexedDB !== "undefined") {
-    legacyCleanupStarted = true;
-    indexedDB.deleteDatabase("rioanime-public-cache");
-  }
   if (!manifestPromise) {
     manifestPromise = fetch("/api/public/manifest", { cache: "no-store" })
       .then(async (response) => {

@@ -18,11 +18,6 @@ export type { FontPreset, ThemePreset } from "@/shared/lib/appearance-presets";
 export const ANIME_RULE_STATUSES = ["public", "locked", "private"] as const;
 export type AnimeRuleStatus = (typeof ANIME_RULE_STATUSES)[number];
 
-export type SiteAnnouncementSettings = {
-  title: string;
-  message: string;
-};
-
 export type SiteAuthLockdownSettings = {
   enabled: boolean;
   message: string;
@@ -40,7 +35,6 @@ export type SiteAnimeRule = {
 export type SiteSettings = {
   themePreset: ThemePreset;
   fontPreset: FontPreset;
-  announcement: SiteAnnouncementSettings;
   authLockdown: SiteAuthLockdownSettings;
   animeRules: SiteAnimeRule[];
   adminAppearance: AdminAppearance;
@@ -52,11 +46,6 @@ const SETTINGS_PATH = path.join(SETTINGS_DIR, "site-settings.json");
 const DEFAULT_SITE_SETTINGS: SiteSettings = {
   themePreset: "dark-purple",
   fontPreset: "lexend-default",
-  announcement: {
-    title: "Welcome to RioAnimePlay",
-    message:
-      "Browse the RioAnime library, search titles, explore genres, and open available episodes from one place."
-  },
   authLockdown: {
     enabled: false,
     message: "Login and registration are currently unavailable."
@@ -110,7 +99,6 @@ function normalizeSettings(input: unknown): SiteSettings {
   }
 
   const candidate = input as Partial<SiteSettings>;
-  const announcement = candidate.announcement ?? DEFAULT_SITE_SETTINGS.announcement;
   const authLockdown = candidate.authLockdown ?? DEFAULT_SITE_SETTINGS.authLockdown;
 
   return {
@@ -122,16 +110,6 @@ function normalizeSettings(input: unknown): SiteSettings {
       typeof candidate.fontPreset === "string" && isFontPreset(candidate.fontPreset)
         ? candidate.fontPreset
         : DEFAULT_SITE_SETTINGS.fontPreset,
-    announcement: {
-      title:
-        typeof announcement.title === "string" && announcement.title.trim()
-          ? announcement.title.trim()
-          : DEFAULT_SITE_SETTINGS.announcement.title,
-      message:
-        typeof announcement.message === "string" && announcement.message.trim()
-          ? announcement.message.trim()
-          : DEFAULT_SITE_SETTINGS.announcement.message
-    },
     authLockdown: {
       enabled:
         typeof authLockdown.enabled === "boolean"
@@ -196,10 +174,6 @@ export function getAnimeRuleByTitle(settings: SiteSettings, title: string) {
 
 export function isAnimePrivate(settings: SiteSettings, title: string) {
   return getAnimeRuleByTitle(settings, title)?.status === "private";
-}
-
-export function isAnimeLocked(settings: SiteSettings, title: string) {
-  return getAnimeRuleByTitle(settings, title)?.status === "locked";
 }
 
 export function filterPrivateAnimeItems<T extends { title: string }>(

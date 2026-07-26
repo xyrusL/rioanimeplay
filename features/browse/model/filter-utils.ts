@@ -383,15 +383,3 @@ export function sortFilteredItems(
     return left.title.localeCompare(right.title, "en", { sensitivity: "base" });
   });
 }
-
-export function paginateItems<T>(items: T[], page: number, pageSize: number = FILTER_PAGE_SIZE) {
-  const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
-  const currentPage = Math.min(page, totalPages);
-  const start = (currentPage - 1) * pageSize;
-
-  return {
-    totalPages,
-    currentPage,
-    pageItems: items.slice(start, start + pageSize)
-  };
-}

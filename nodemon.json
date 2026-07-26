@@ -4,7 +4,6 @@
     "entities",
     "features",
     "shared",
-    "pages",
     "public",
     "data",
     "next.config.ts",

@@ -106,7 +106,7 @@ app/page.tsx
 
 ### How D1 Rows Become User Content
 
-1. `handleHome`, `handleBrowse`, `handleSearch`, or `handleAnimeDetail` prepares a parameterized D1 query.
+1. `handleHome`, `handleBrowse`, `handleAlphabeticalCatalog`, or `handleAnimeDetail` prepares a parameterized D1 query.
 2. Public queries enforce `published`, `public`, non-deleted content through `PUBLIC_ANIME_PREDICATE`.
 3. `toMedia()` converts snake-case database columns into the API's catalog shape.
 4. `entities/anime/api/catalog.ts` validates the HTTP result boundary through TypeScript response types.
@@ -120,21 +120,21 @@ flowchart TD
     B["Browse or search UI"] --> Q{"Request type"}
     Q -->|"Browse page"| BR["fetchBrowseCatalog"]
     Q -->|"A-Z page"| AZ["fetchAlphabeticalCatalog"]
-    Q -->|"Search query"| SE["searchAnimeByTitle"]
+    Q -->|"Search query"| SE["Browser search index"]
     BR --> WB["Worker /v1/browse"]
     AZ --> WA["Worker /v1/anime/a-z"]
-    SE --> WS["Worker /v1/search?q=..."]
+    SE --> SI["Next /api/public/search-index"]
     WB --> DB[("D1 anime")]
     WA --> DB
-    WS -->|"Bound parameters; limit up to 20"| DB
+    SI --> WB
     DB --> F["Published public records only"]
     F --> UI["Mapped cards and filters"]
 ```
 
 - Catalog responses use a revision-aware Worker cache with a 15-minute maximum TTL.
-- Search responses use a shorter 5-minute maximum TTL.
+- Search indexes use the catalog revision and browser cache for invalidation.
 - Server catalog requests use Next.js revalidation unless freshness is explicitly required.
-- Search input is length checked, result count is capped, and SQL values are bound rather than interpolated.
+- Search ranking runs locally against the validated public index.
 
 ## Watch Flow
 

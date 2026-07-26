@@ -87,7 +87,7 @@ Mobile is a separate product composition, not a scaled-down copy of desktop. Rou
 
 - Mobile renders the shared settings behavior with `compact` structure inside `MobileAppShell`.
 - Account cards, appearance controls, and session controls are reorganized for a narrow viewport rather than reproducing the desktop layout.
-- Successful Google sign-in opens a mobile Welcome Back bottom sheet with the member avatar and one of three randomly selected messages. The URL marker is consumed so refresh does not reopen it.
+- A newly registered Google member receives a one-time welcome sheet. Returning members do not receive the new-member message.
 - Both mobile sign-out controls open a confirmation bottom sheet before invoking the server sign-out action.
 - The account sheets cover the floating navigation, close from the backdrop, close button, or Escape, and use safe-area bottom spacing.
 
@@ -100,7 +100,23 @@ flowchart TD
     C -->|available| D["Mobile watch screen"]
     C -->|locked| E["Mobile unavailable screen"]
     C -->|not-found| F["Not found"]
+    D --> G["Smart video player"]
+    G --> H["App Router episode-source proxy"]
+    H --> I["Worker episode lookup in D1"]
 ```
+
+- The outer `MobileWatchScreen` owns custom fullscreen state and the close control.
+- Mobile fullscreen fills the rotated viewport with `100dvw` and `100dvh`.
+- Google Drive embeds remain centered in a viewport-aware 16:9 frame instead of stretching across the landscape viewport.
+- Entering fullscreen requests landscape orientation when supported; closing releases the orientation lock through the same fullscreen session.
+- Episode source URLs are requested only after selection through `GET /api/watch-episode` and are never stored in the public browser cache.
+
+## Mobile Search And Cache
+
+- Search focus loads the revision manifest and compact public search index when needed.
+- `browser-anime-search.ts` validates and ranks the index locally with Fuse.js.
+- Catalog, episode metadata, and announcement records use the shared protocol-v2 IndexedDB cache.
+- Video URLs, account data, admin responses, and Worker credentials never enter IndexedDB.
 
 ## Shared Mobile Components
 
