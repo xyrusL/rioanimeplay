@@ -195,24 +195,26 @@ export function SmartVideoPlayer({
     const wrapper = googleDriveWrapperRef.current;
     const iframe = googleDriveIframeRef.current;
     if (!wrapper || !iframe) return;
+    const driveWrapper: HTMLDivElement = wrapper;
+    const driveIframe: HTMLIFrameElement = iframe;
 
     function fitGoogleDriveViewport() {
-      const { width, height } = wrapper.getBoundingClientRect();
+      const { width, height } = driveWrapper.getBoundingClientRect();
       if (!width || !height) return;
 
       const viewportHeight = Math.max(height, MINIMUM_GOOGLE_DRIVE_VIEWPORT_HEIGHT);
       const scale = height / viewportHeight;
-      iframe.style.width = `${width / scale}px`;
-      iframe.style.height = `${viewportHeight}px`;
-      iframe.style.maxWidth = "none";
-      iframe.style.maxHeight = "none";
-      iframe.style.transform = `scale(${scale})`;
-      iframe.style.transformOrigin = "top left";
+      driveIframe.style.width = `${width / scale}px`;
+      driveIframe.style.height = `${viewportHeight}px`;
+      driveIframe.style.maxWidth = "none";
+      driveIframe.style.maxHeight = "none";
+      driveIframe.style.transform = `scale(${scale})`;
+      driveIframe.style.transformOrigin = "top left";
     }
 
     fitGoogleDriveViewport();
     const observer = new ResizeObserver(fitGoogleDriveViewport);
-    observer.observe(wrapper);
+    observer.observe(driveWrapper);
     return () => observer.disconnect();
   }, [source]);
 
