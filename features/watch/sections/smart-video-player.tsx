@@ -246,34 +246,33 @@ export function SmartVideoPlayer({
 
   return (
     <div className={containerClass}>
-      <iframe
-        key={source.url}
+      <div
         className={
           source.provider === "gdrive"
-            ? "absolute inset-0 block h-full w-full max-w-full border-0 bg-black"
-            : "h-full w-full border-0 bg-black"
+            ? "absolute inset-0 min-h-0 min-w-0 overflow-hidden bg-black [contain:layout_paint_size]"
+            : "h-full w-full"
         }
-        src={source.url}
-        title={`${title} episode ${episodeNumber}`}
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-        allowFullScreen
-        onLoad={() => setIsIframeLoading(false)}
-        referrerPolicy="strict-origin-when-cross-origin"
-        sandbox={
-          source.provider === "gdrive"
-            ? "allow-forms allow-presentation allow-same-origin allow-scripts"
-            : undefined
-        }
-      />
+      >
+        <iframe
+          key={source.url}
+          width="100%"
+          height="100%"
+          className="m-0 block h-full max-h-full min-h-0 w-full max-w-full min-w-0 border-0 bg-black"
+          src={source.url}
+          title={`${title} episode ${episodeNumber}`}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+          allowFullScreen
+          onLoad={() => setIsIframeLoading(false)}
+          referrerPolicy="strict-origin-when-cross-origin"
+          sandbox={
+            source.provider === "gdrive"
+              ? "allow-forms allow-presentation allow-same-origin allow-scripts"
+              : undefined
+          }
+        />
+      </div>
       {isIframeLoading || !minimumLoadingComplete ? (
         <LoadingCover episodeNumber={episodeNumber} poster={poster} />
-      ) : null}
-      {source.provider === "gdrive" ? (
-        <div
-          aria-hidden="true"
-          className="absolute top-0 right-0 z-20 h-14 w-16 touch-none bg-black/[0.02] select-none sm:h-16 sm:w-20"
-          onContextMenu={(event) => event.preventDefault()}
-        />
       ) : null}
     </div>
   );

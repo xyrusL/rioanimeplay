@@ -167,22 +167,24 @@ export function MobileWatchScreen({ anime }: MobileWatchScreenProps) {
             </div>
           </header>
 
-          <section ref={playerSectionRef} className="relative overflow-hidden rounded-[34px] border border-[rgba(255,255,255,0.07)] bg-[rgba(11,16,22,0.72)] shadow-[0_30px_64px_rgba(0,0,0,0.34)] fullscreen:fixed fullscreen:inset-0 fullscreen:z-[100] fullscreen:m-0 fullscreen:flex fullscreen:h-[100dvh] fullscreen:max-h-none fullscreen:w-[100dvw] fullscreen:max-w-none fullscreen:flex-col fullscreen:items-center fullscreen:justify-center fullscreen:rounded-none fullscreen:border-0 fullscreen:bg-black">
-            <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.07)] px-4 py-3 fullscreen:hidden">
-              <span className="inline-flex items-center gap-1.5 text-[0.68rem] uppercase tracking-[0.18em] text-[rgba(157,216,255,0.9)]">
-                <MaterialIcon className="text-[15px]" name="play_circle" />
-                Episode {selectedEpisode}
-              </span>
-              <button
-                type="button"
-                aria-label="Maximize video player in landscape"
-                title="Maximize video player in landscape"
-                onClick={() => void openLandscapePlayer()}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[rgba(157,216,255,0.9)] transition-colors hover:bg-white/5 hover:text-white"
-              >
-                <MaterialIcon className="text-[21px]" name="fullscreen" />
-              </button>
-            </div>
+          <section ref={playerSectionRef} className="relative overflow-hidden rounded-[34px] border border-[rgba(255,255,255,0.07)] bg-[rgba(11,16,22,0.72)] shadow-[0_30px_64px_rgba(0,0,0,0.34)] fullscreen:fixed fullscreen:inset-0 fullscreen:z-[100] fullscreen:m-0 fullscreen:h-[100dvh] fullscreen:max-h-none fullscreen:w-[100dvw] fullscreen:max-w-none fullscreen:rounded-none fullscreen:border-0 fullscreen:bg-black">
+            {!isPlayerFullscreen ? (
+              <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.07)] px-4 py-3">
+                <span className="inline-flex items-center gap-1.5 text-[0.68rem] uppercase tracking-[0.18em] text-[rgba(157,216,255,0.9)]">
+                  <MaterialIcon className="text-[15px]" name="play_circle" />
+                  Episode {selectedEpisode}
+                </span>
+                <button
+                  type="button"
+                  aria-label="Maximize video player in landscape"
+                  title="Maximize video player in landscape"
+                  onClick={() => void openLandscapePlayer()}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[rgba(157,216,255,0.9)] transition-colors hover:bg-white/5 hover:text-white"
+                >
+                  <MaterialIcon className="text-[21px]" name="fullscreen" />
+                </button>
+              </div>
+            ) : null}
             {isPlayerFullscreen ? (
               <button
                 type="button"
@@ -199,7 +201,7 @@ export function MobileWatchScreen({ anime }: MobileWatchScreenProps) {
               episodeNumber={selectedEpisode}
               poster={anime.bannerImage ?? anime.coverImage}
               title={anime.title}
-              className={isPlayerFullscreen ? "!aspect-video !h-auto !max-h-[100dvh] !w-[min(100dvw,177.7778dvh)]" : undefined}
+              className={isPlayerFullscreen ? "!aspect-auto !h-[100dvh] !max-h-none !w-[100dvw]" : undefined}
               compactControls
             />
           </section>
