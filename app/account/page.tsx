@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 
 import { auth, signIn, signOut } from "@/auth";
 import { AccountSettingsContent } from "@/features/account/sections/account-settings-content";
@@ -17,12 +17,12 @@ export const metadata: Metadata = {
 };
 
 type AccountPageProps = {
-  searchParams?: Promise<{ error?: string; welcome?: string }>;
+  searchParams?: Promise<{ error?: string }>;
 };
 
 async function signInWithGoogle() {
   "use server";
-  await signIn("google", { redirectTo: "/account?welcome=1" });
+  await signIn("google", { redirectTo: "/account" });
 }
 
 async function signOutAccount() {
@@ -32,11 +32,12 @@ async function signOutAccount() {
 
 export default async function AccountPage({ searchParams }: AccountPageProps) {
   const headerStore = await headers();
+  const cookieStore = await cookies();
   const initialIsMobile = isLikelyMobileUserAgent(headerStore.get("user-agent") ?? "");
   const [session, siteSettings, params, catalog] = await Promise.all([
     auth(),
     getSiteSettings(),
-    searchParams ?? Promise.resolve<{ error?: string; welcome?: string }>({}),
+    searchParams ?? Promise.resolve<{ error?: string }>({}),
     getBrowseCatalog()
   ]);
   const member = session?.user
@@ -58,7 +59,7 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
         ? "Google sign-in could not be completed. Please try again."
         : null,
     member,
-    showWelcome: params.welcome === "1" && Boolean(member),
+    showWelcome: cookieStore.get("rioanime-new-member")?.value === "1" && Boolean(member),
     signInAction: signInWithGoogle,
     signOutAction: signOutAccount
   };

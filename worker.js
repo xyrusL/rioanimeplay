@@ -1923,15 +1923,35 @@ function parseWatchedEpisodes(value) {
   }
 }
 
-async function getGoogleAccount(request, env, origin, updateLastLogin = false) {
+async function getGoogleAccount(request, env, origin, updateLastLogin = false, createMember = false) {
   const email = decodeIdentityHeader(request, "X-RioAnime-User-Email").toLowerCase();
   if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return { response: error("INVALID_USER", "A valid signed-in user is required", 400, origin) };
   }
 
-  const account = await env.DB.prepare(
+  let account = await env.DB.prepare(
     "SELECT id, email, username, role, status FROM accounts WHERE email = ?1 COLLATE NOCASE LIMIT 1"
   ).bind(email).first();
+  let created = false;
+  if (!account && createMember) {
+    const displayName = decodeIdentityHeader(request, "X-RioAnime-User-Name");
+    const usernameBase = (displayName || email.split("@")[0])
+      .normalize("NFKD")
+      .replace(/[^a-z0-9]+/gi, "_")
+      .replace(/^_+|_+$/g, "")
+      .slice(0, 40)
+      .toLowerCase() || "member";
+    const username = `${usernameBase}_${(await hashKey(email)).slice(0, 8)}`;
+    const result = await env.DB.prepare(
+      `INSERT OR IGNORE INTO accounts
+         (id, email, username, password_hash, role, status, email_verified_at, last_login_at)
+       VALUES (?1, ?2, ?3, 'oauth:google', 'member', 'active', datetime('now'), datetime('now'))`
+    ).bind(createId(), email, username).run();
+    created = Number(result.meta?.changes ?? 0) > 0;
+    account = await env.DB.prepare(
+      "SELECT id, email, username, role, status FROM accounts WHERE email = ?1 COLLATE NOCASE LIMIT 1"
+    ).bind(email).first();
+  }
   if (!account) {
     return { response: error("ACCOUNT_NOT_REGISTERED", "This account is not registered", 403, origin) };
   }
@@ -1942,7 +1962,7 @@ async function getGoogleAccount(request, env, origin, updateLastLogin = false) {
   if (updateLastLogin) {
     await env.DB.prepare("UPDATE accounts SET last_login_at = datetime('now') WHERE id = ?1").bind(account.id).run();
   }
-  return { account };
+  return { account, created };
 }
 
 async function readUserLibrary(env, accountId) {
@@ -2087,9 +2107,9 @@ async function handleUserSync(request, env, origin) {
     return error("METHOD_NOT_ALLOWED", "Method not allowed", 405, origin);
   }
 
-  const identity = await getGoogleAccount(request, env, origin, true);
+  const identity = await getGoogleAccount(request, env, origin, true, true);
   if (identity.response) return identity.response;
-  return json({ account: identity.account }, 200, origin);
+  return json({ account: identity.account, created: identity.created }, 200, origin);
 }
 
 async function handleUserLibrary(request, env, origin) {

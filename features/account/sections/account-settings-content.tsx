@@ -54,9 +54,9 @@ const EMPTY_LIBRARY: UserLibrarySnapshot = {
 };
 
 const WELCOME_MESSAGES = [
-  "Your watchlist is ready. Let’s find your next favorite anime.",
-  "Your library missed you. Pick up right where you left off.",
-  "New stories are waiting. Make yourself at home."
+  "Thank you for joining our community. Your watchlist is ready for your next favorite anime.",
+  "Thank you for becoming a member. New stories and your personal library are ready.",
+  "We’re happy you joined us. Make yourself at home and start exploring."
 ];
 
 function GoogleMark() {
@@ -122,7 +122,7 @@ export function AccountSettingsContent({
     if (!showWelcome) return;
 
     setWelcomeMessage(WELCOME_MESSAGES[Math.floor(Math.random() * WELCOME_MESSAGES.length)]);
-    window.history.replaceState(null, "", "/account");
+    document.cookie = "rioanime-new-member=; Max-Age=0; Path=/account; SameSite=Lax";
   }, [showWelcome]);
 
   useEffect(() => {
@@ -540,9 +540,9 @@ export function AccountSettingsContent({
               <MaterialIcon className="text-[14px]" name="check" />
             </span>
           </div>
-          <p className="mt-4 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[var(--accent-strong)]">Signed in successfully</p>
+          <p className="mt-4 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[var(--accent-strong)]">Membership created</p>
           <h2 id="welcome-back-dialog-title" className="mt-1.5 font-display text-xl font-black tracking-[-0.035em] text-white sm:text-[1.35rem]">
-            Welcome back{member?.name ? `, ${member.name.split(" ")[0]}` : ""}!
+            Welcome to RioAnime{member?.name ? `, ${member.name.split(" ")[0]}` : ""}!
           </h2>
           <p className="mt-2 max-w-[280px] text-xs leading-5 text-[var(--text-secondary)]">
             {welcomeMessage}
