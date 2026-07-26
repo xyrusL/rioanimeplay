@@ -21,7 +21,7 @@ type AdminSession = {
 };
 
 async function verifyGoogleAdminIdentity(email: string): Promise<AdminAccount | null> {
-  const apiUrl = process.env.RIOANIME_API_URL ?? "https://api.rioanime.deze.me";
+  const apiUrl = process.env.RIOANIME_API_URL ?? "https://api.rioanime.dezely.com";
   const apiKey = process.env.RIOANIME_API_KEY;
   if (!apiKey) return null;
   try {
@@ -78,7 +78,7 @@ function readSessionValue(value: string | undefined): AdminSession | null {
 }
 
 export async function verifyAdminCredentials(email: string, password: string) {
-  const apiUrl = process.env.RIOANIME_API_URL ?? "https://api.rioanime.deze.me";
+  const apiUrl = process.env.RIOANIME_API_URL ?? "https://api.rioanime.dezely.com";
   const apiKey = process.env.RIOANIME_API_KEY;
   if (!apiKey) throw new Error("RIOANIME_API_KEY is not configured");
 

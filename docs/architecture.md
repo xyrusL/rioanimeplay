@@ -202,7 +202,7 @@ Operational limits protect the Worker and D1 request budget:
 Deployment status as of 2026-07-18:
 
 - remote D1 migration `0021_account_library.sql` is applied
-- production Worker version `d4a55c44-3a9e-49eb-b115-c2df2ce87610` is deployed at `api.rioanime.deze.me`
+- the Worker custom domain is configured as `api.rioanime.dezely.com`
 - direct requests without the private Worker key return `404`
 - the Next.js frontend synchronization code is implemented in the worktree but still requires the normal Git-based frontend deployment
 
@@ -218,6 +218,12 @@ The active autocomplete path is browser-local:
 `shared/lib/public-resource-cache.ts` owns IndexedDB validation, checksums, resource schema versions, optional migrations, atomic replacement, stale fallback, cross-tab change notices, and a 25 MB LRU target. Invalid entries are removed individually; an unusable database is recreated automatically.
 
 Announcements use the same cache manager with a 30-second TTL because scheduled visibility can change without a database mutation. Search indexes use the manifest revision as their primary invalidation signal.
+
+### D1 and edge budget protection
+
+Public Worker routes check the Cloudflare Cache API before loading catalog, anime, episode, announcement, or manifest data from D1. The first-party deployment key keeps its policy in a short-lived isolate cache, and canonical site origins avoid a per-request domain-lock lookup. Non-site API keys still use full D1-backed authentication, domain locking, limits, and usage accounting.
+
+Successful request metrics are sampled at 2% and weighted to preserve approximate totals; errors are recorded immediately. Policy usage remains exact only for keys with an active request, daily, or bandwidth limit. Public Vercel proxies use shared `s-maxage`, stale revalidation, and stale-on-error headers, while account, admin, and library responses remain private and uncached.
 
 ## Settings and Admin Control
 

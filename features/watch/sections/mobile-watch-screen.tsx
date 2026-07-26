@@ -27,6 +27,7 @@ type MobileWatchScreenProps = {
 
 type LockableScreenOrientation = ScreenOrientation & {
   lock(orientation: "landscape"): Promise<void>;
+  unlock?: () => void;
 };
 
 export function MobileWatchScreen({ anime }: MobileWatchScreenProps) {
@@ -35,6 +36,7 @@ export function MobileWatchScreen({ anime }: MobileWatchScreenProps) {
   const [watchedEpisodes, setWatchedEpisodes] = useState<number[]>([]);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isPlayerFullscreen, setIsPlayerFullscreen] = useState(false);
   const playerSectionRef = useRef<HTMLElement>(null);
   const episodeNumbers = anime.episodeNumbers;
 
@@ -62,6 +64,20 @@ export function MobileWatchScreen({ anime }: MobileWatchScreenProps) {
       setWatchedEpisodes(getWatchedEpisodes(anime.id));
     }
   }, [anime.episodeNumbers, anime.id, selectedEpisode]);
+
+  useEffect(() => {
+    function handleFullscreenChange() {
+      const isFullscreen = document.fullscreenElement === playerSectionRef.current;
+      setIsPlayerFullscreen(isFullscreen);
+
+      if (!isFullscreen) {
+        (screen.orientation as LockableScreenOrientation).unlock?.();
+      }
+    }
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
 
   function handleBookmarkToggle() {
     const nextIds = toggleAnimeBookmark(anime.id);
@@ -92,6 +108,12 @@ export function MobileWatchScreen({ anime }: MobileWatchScreenProps) {
         webkitEnterFullscreen?: () => void;
       };
       video?.webkitEnterFullscreen?.();
+    }
+  }
+
+  async function closeLandscapePlayer() {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
     }
   }
 
@@ -145,7 +167,7 @@ export function MobileWatchScreen({ anime }: MobileWatchScreenProps) {
             </div>
           </header>
 
-          <section ref={playerSectionRef} className="overflow-hidden rounded-[34px] border border-[rgba(255,255,255,0.07)] bg-[rgba(11,16,22,0.72)] shadow-[0_30px_64px_rgba(0,0,0,0.34)] fullscreen:flex fullscreen:h-screen fullscreen:w-screen fullscreen:flex-col fullscreen:justify-center fullscreen:rounded-none fullscreen:border-0 fullscreen:bg-black">
+          <section ref={playerSectionRef} className="relative overflow-hidden rounded-[34px] border border-[rgba(255,255,255,0.07)] bg-[rgba(11,16,22,0.72)] shadow-[0_30px_64px_rgba(0,0,0,0.34)] fullscreen:fixed fullscreen:inset-0 fullscreen:z-[100] fullscreen:m-0 fullscreen:flex fullscreen:h-[100dvh] fullscreen:max-h-none fullscreen:w-[100dvw] fullscreen:max-w-none fullscreen:flex-col fullscreen:justify-center fullscreen:rounded-none fullscreen:border-0 fullscreen:bg-black">
             <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.07)] px-4 py-3 fullscreen:hidden">
               <span className="inline-flex items-center gap-1.5 text-[0.68rem] uppercase tracking-[0.18em] text-[rgba(157,216,255,0.9)]">
                 <MaterialIcon className="text-[15px]" name="play_circle" />
@@ -161,11 +183,23 @@ export function MobileWatchScreen({ anime }: MobileWatchScreenProps) {
                 <MaterialIcon className="text-[21px]" name="fullscreen" />
               </button>
             </div>
+            {isPlayerFullscreen ? (
+              <button
+                type="button"
+                aria-label="Minimize video player"
+                title="Minimize video player"
+                onClick={() => void closeLandscapePlayer()}
+                className="fixed top-[max(1rem,env(safe-area-inset-top))] right-[max(1rem,env(safe-area-inset-right))] z-[120] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/65 text-white shadow-[0_12px_30px_rgba(0,0,0,0.4)] backdrop-blur-md"
+              >
+                <MaterialIcon className="text-[24px]" name="fullscreen_exit" />
+              </button>
+            ) : null}
             <SmartVideoPlayer
               animeId={anime.libraryId}
               episodeNumber={selectedEpisode}
               poster={anime.bannerImage ?? anime.coverImage}
               title={anime.title}
+              className={isPlayerFullscreen ? "!h-[100dvh] !max-h-none !w-[100dvw] !aspect-auto" : undefined}
               compactControls
             />
           </section>

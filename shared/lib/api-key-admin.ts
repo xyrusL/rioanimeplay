@@ -1,6 +1,6 @@
 import "server-only";
 
-const API_URL = process.env.RIOANIME_API_URL ?? "https://api.rioanime.deze.me";
+const API_URL = process.env.RIOANIME_API_URL ?? "https://api.rioanime.dezely.com";
 
 export async function requestApiKeyAdmin(path: string, init?: RequestInit) {
   const apiKey = process.env.RIOANIME_API_KEY;

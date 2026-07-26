@@ -52,7 +52,11 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
     catalog,
     defaultFontPreset: siteSettings.fontPreset,
     defaultThemePreset: siteSettings.themePreset,
-    errorMessage: params.error ? "Google sign-in could not be completed. Please try again." : null,
+    errorMessage: params.error === "AccessDenied"
+      ? "This Google account does not have access. Use a registered account and try again."
+      : params.error
+        ? "Google sign-in could not be completed. Please try again."
+        : null,
     member,
     showWelcome: params.welcome === "1" && Boolean(member),
     signInAction: signInWithGoogle,

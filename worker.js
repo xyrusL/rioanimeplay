@@ -1,11 +1,10 @@
 import { contentRetention } from "./shared/lib/content-retention.mjs";
 import { normalizePostUrlSlug, isValidPostUrlSlug } from "./shared/lib/post-url-slug.mjs";
-import { etagMatches } from "./shared/lib/public-cache-policy.mjs";
+import { etagMatches, shouldSampleSuccess } from "./shared/lib/public-cache-policy.mjs";
 
 const FALLBACK_ALLOWED_ORIGINS = new Set([
   "http://localhost:3000",
-  "https://rioanime.deze.me",
-  "https://rioanimeplay.deze.me"
+  "https://rioanime.dezely.com"
 ]);
 
 const MEDIA_COLUMNS = `
@@ -64,6 +63,8 @@ async function isAllowedOrigin(env, keyId, origin) {
   if (!origin) return true;
   const normalized = normalizeOrigin(origin);
   if (!normalized) return false;
+  // Avoid a D1 policy lookup for the first-party deployment's canonical origins.
+  if (keyId === "site-deployment-key" && FALLBACK_ALLOWED_ORIGINS.has(normalized)) return true;
   try {
     const setting = await env.DB.prepare("SELECT enabled FROM api_key_domain_settings WHERE key_id = ?1").bind(keyId).first();
     if (!setting || Number(setting.enabled) === 0) return true;
@@ -208,7 +209,7 @@ function publicEtag(cacheUrl, cacheVersion, body) {
 
 async function cachedJson(request, origin, ctx, ttl, loader, cacheVersion = "2") {
   const cacheUrl = new URL(request.url);
-  cacheUrl.searchParams.set("__cacheVersion", cacheVersion);
+  cacheUrl.searchParams.delete("__cacheVersion");
   const cacheKey = new Request(cacheUrl, { method: "GET" });
   const cached = await caches.default.match(cacheKey);
 
@@ -222,6 +223,7 @@ async function cachedJson(request, origin, ctx, ttl, loader, cacheVersion = "2")
   }
 
   const data = await loader();
+  if (data instanceof Response) return data;
   const body = JSON.stringify(data);
   const etag = publicEtag(cacheUrl, cacheVersion, body);
   const responseHeadersValue = responseHeaders(origin, `private, max-age=${Math.min(ttl, 60)}, stale-while-revalidate=300`);
@@ -486,21 +488,12 @@ async function handleAdminAnnouncements(request, env, origin, accountId, path) {
   return error("METHOD_NOT_ALLOWED", "Unsupported announcement operation", 405, origin);
 }
 
-async function getResourceRevision(env, key) {
-  const row = await env.DB.prepare("SELECT value FROM metadata WHERE key = ?1").bind(key).first();
-  return String(row?.value ?? "0");
-}
-
 async function incrementResourceRevision(env, key) {
   await env.DB.prepare(
     `INSERT INTO metadata (key, value, updated_at) VALUES (?1, '1', datetime('now'))
      ON CONFLICT(key) DO UPDATE SET
        value = CAST(CAST(value AS INTEGER) + 1 AS TEXT), updated_at = datetime('now')`
   ).bind(key).run();
-}
-
-function getCatalogRevision(env) {
-  return getResourceRevision(env, "catalog_revision");
 }
 
 function incrementCatalogRevision(env) {
@@ -511,19 +504,21 @@ function incrementAnnouncementRevision(env) {
   return incrementResourceRevision(env, "announcement_revision");
 }
 
-async function handleCacheManifest(env, origin) {
-  const rows = await env.DB.prepare(
-    "SELECT key, value FROM metadata WHERE key IN ('catalog_revision', 'episodes_revision', 'announcement_revision')"
-  ).all();
-  const revisions = Object.fromEntries(rows.results.map((row) => [row.key, String(row.value ?? "0")]));
-  return json({
-    cacheProtocolVersion: 2,
-    resources: {
-      catalog: { schemaVersion: 1, revision: revisions.catalog_revision ?? "0" },
-      episodes: { schemaVersion: 1, revision: revisions.episodes_revision ?? "0" },
-      announcements: { schemaVersion: 1, revision: revisions.announcement_revision ?? "0" }
-    }
-  }, 200, origin, "private, no-store");
+async function handleCacheManifest(request, env, ctx, origin) {
+  return cachedJson(request, origin, ctx, 60, async () => {
+    const rows = await env.DB.prepare(
+      "SELECT key, value FROM metadata WHERE key IN ('catalog_revision', 'episodes_revision', 'announcement_revision')"
+    ).all();
+    const revisions = Object.fromEntries(rows.results.map((row) => [row.key, String(row.value ?? "0")]));
+    return {
+      cacheProtocolVersion: 2,
+      resources: {
+        catalog: { schemaVersion: 1, revision: revisions.catalog_revision ?? "0" },
+        episodes: { schemaVersion: 1, revision: revisions.episodes_revision ?? "0" },
+        announcements: { schemaVersion: 1, revision: revisions.announcement_revision ?? "0" }
+      }
+    };
+  }, "manifest-v2");
 }
 
 function toMedia(row) {
@@ -594,43 +589,70 @@ export function mergeTrackedRouteMetrics(rows) {
   });
 }
 
-async function recordRequestMetric(env, path, status, duration) {
+async function recordRequestMetric(env, path, status, duration, weight = 1) {
   const bucket = new Date().toISOString().slice(0, 13) + ":00:00Z";
   await env.DB.prepare(
     `INSERT INTO request_metrics_hourly
       (bucket_at, route, request_count, error_count, total_duration_ms, max_duration_ms)
-     VALUES (?1, ?2, 1, ?3, ?4, ?4)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6)
      ON CONFLICT(bucket_at, route) DO UPDATE SET
-       request_count = request_count + 1,
+       request_count = request_count + excluded.request_count,
        error_count = error_count + excluded.error_count,
        total_duration_ms = total_duration_ms + excluded.total_duration_ms,
        max_duration_ms = MAX(max_duration_ms, excluded.max_duration_ms)`
-  ).bind(bucket, normalizeMetricRoute(path), status >= 400 ? 1 : 0, duration).run();
+  ).bind(bucket, normalizeMetricRoute(path), weight, status >= 400 ? 1 : 0, duration * weight, duration).run();
 }
 
-async function recordApiKeyMetric(env, keyId, path, status, duration) {
+async function recordApiKeyMetric(env, keyId, path, status, duration, weight = 1) {
   if (!keyId) return;
   const bucket = new Date().toISOString().slice(0, 13) + ":00:00Z";
   await env.DB.prepare(
     `INSERT INTO api_key_metrics_hourly
       (key_id, bucket_at, route, request_count, error_count, total_duration_ms, max_duration_ms)
-     VALUES (?1, ?2, ?3, 1, ?4, ?5, ?5)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
      ON CONFLICT(key_id, bucket_at, route) DO UPDATE SET
-       request_count = request_count + 1,
+       request_count = request_count + excluded.request_count,
        error_count = error_count + excluded.error_count,
        total_duration_ms = total_duration_ms + excluded.total_duration_ms,
        max_duration_ms = MAX(max_duration_ms, excluded.max_duration_ms)`
-  ).bind(keyId, bucket, normalizeMetricRoute(path), status >= 400 ? 1 : 0, duration).run();
+  ).bind(keyId, bucket, normalizeMetricRoute(path), weight, status >= 400 ? 1 : 0, duration * weight, duration).run();
+}
+
+function successMetricWeight(request) {
+  const sampleKey = request.headers.get("CF-Ray") ?? crypto.randomUUID();
+  return shouldSampleSuccess(sampleKey, 0.02) ? 50 : 0;
+}
+
+let sitePolicy = { status: "active", rate_limit_per_minute: null, daily_request_limit: null, daily_bandwidth_limit_bytes: null };
+let sitePolicyExpiresAt = 0;
+let sitePolicyPromise = null;
+
+async function getSiteApiKeyPolicy(env) {
+  if (Date.now() < sitePolicyExpiresAt) return sitePolicy;
+  if (!sitePolicyPromise) {
+    sitePolicyPromise = env.DB.prepare(
+      `SELECT status, rate_limit_per_minute, daily_request_limit, daily_bandwidth_limit_bytes
+       FROM system_api_key_policy WHERE id = 'site-deployment-key'`
+    ).first().then((policy) => {
+      if (policy) sitePolicy = policy;
+      sitePolicyExpiresAt = Date.now() + 60_000;
+      return sitePolicy;
+    }).catch((cause) => {
+      console.error("RioAnime site API policy lookup failed", cause);
+      sitePolicyExpiresAt = Date.now() + 10_000;
+      return sitePolicy;
+    }).finally(() => {
+      sitePolicyPromise = null;
+    });
+  }
+  return sitePolicyPromise;
 }
 
 async function authenticateApiKey(env, provided) {
   if (!provided) return null;
   if (await keysMatch(provided, env.API_KEY)) {
-    const policy = await env.DB.prepare(
-      `SELECT status, rate_limit_per_minute, daily_request_limit, daily_bandwidth_limit_bytes
-       FROM system_api_key_policy WHERE id = 'site-deployment-key'`
-    ).first();
-    if (policy?.status === "paused") return null;
+    const policy = await getSiteApiKeyPolicy(env);
+    if (policy.status === "paused") return null;
     return { id: "site-deployment-key", metricsId: null, isMaster: true, ...policy };
   }
 
@@ -668,7 +690,9 @@ async function enforceApiKeyPolicy(env, key, origin) {
   return null;
 }
 
-async function recordApiKeyPolicyUsage(env, keyId, response) {
+async function recordApiKeyPolicyUsage(env, key, response) {
+  if (!key || (!key.rate_limit_per_minute && !key.daily_request_limit && !key.daily_bandwidth_limit_bytes)) return;
+  const keyId = key.id;
   const bucket = new Date().toISOString().slice(0, 16) + ":00Z";
   const bytes = Number.parseInt(response.headers.get("Content-Length") ?? "0", 10) || 0;
   await env.DB.prepare(
@@ -1753,7 +1777,6 @@ async function routeAdminManagement(request, env, origin, path) {
 }
 
 async function handleHome(request, env, ctx, origin) {
-  const revision = await getCatalogRevision(env);
   return cachedJson(request, origin, ctx, 900, async () => {
     const [anime, movies] = await env.DB.batch([
       env.DB.prepare(
@@ -1764,28 +1787,26 @@ async function handleHome(request, env, ctx, origin) {
       )
     ]);
     return { anime: uniqueMedia(anime.results), movies: uniqueMedia(movies.results) };
-  }, revision);
+  }, "catalog-home-v1");
 }
 
 async function handleBrowse(request, env, ctx, origin) {
-  const revision = await getCatalogRevision(env);
   return cachedJson(request, origin, ctx, 900, async () => {
     const rows = await env.DB.prepare(
       `SELECT ${MEDIA_COLUMNS} FROM anime WHERE ${PUBLIC_ANIME_PREDICATE} ORDER BY title COLLATE NOCASE ASC`
     ).all();
     const media = uniqueMedia(rows.results);
     return { anime: media, movies: media.filter((item) => item.format === "MOVIE") };
-  }, revision);
+  }, "catalog-browse-v1");
 }
 
 async function handleAlphabeticalCatalog(request, env, ctx, origin) {
-  const revision = await getCatalogRevision(env);
   return cachedJson(request, origin, ctx, 900, async () => {
     const rows = await env.DB.prepare(
       `SELECT ${MEDIA_COLUMNS} FROM anime WHERE ${PUBLIC_ANIME_PREDICATE} AND trim(title) != '' ORDER BY title COLLATE NOCASE ASC`
     ).all();
     return { anime: rows.results.map(toMedia) };
-  }, revision);
+  }, "catalog-a-z-v1");
 }
 
 async function handleSearch(request, env, ctx, origin) {
@@ -1796,7 +1817,6 @@ async function handleSearch(request, env, ctx, origin) {
     return error("INVALID_QUERY", "q must contain between 1 and 100 characters", 400, origin);
   }
 
-  const revision = await getCatalogRevision(env);
   return cachedJson(request, origin, ctx, 300, async () => {
     const pattern = `%${query}%`;
     const rows = await env.DB.prepare(
@@ -1808,7 +1828,7 @@ async function handleSearch(request, env, ctx, origin) {
        LIMIT ?3`
     ).bind(pattern, query, limit).all();
     return { media: uniqueMedia(rows.results) };
-  }, revision);
+  }, "catalog-search-v1");
 }
 
 async function getAnimeRecord(env, slug) {
@@ -1818,16 +1838,18 @@ async function getAnimeRecord(env, slug) {
   ).bind(slug).first();
 }
 
-async function handleAnimeDetail(env, slug, origin) {
+async function handleAnimeDetail(request, env, ctx, slug, origin) {
   if (!isValidPostUrlSlug(slug) && !isValidAnimeId(slug)) {
     return error("INVALID_ANIME_ID", "Invalid anime identifier", 400, origin);
   }
-  const record = await getAnimeRecord(env, slug);
-  if (!record) return error("NOT_FOUND", "Anime not found", 404, origin);
-  return json({ anime: toMedia(record), library: { animeId: record.anime_id, source: record.source } }, 200, origin, "private, max-age=60");
+  return cachedJson(request, origin, ctx, 300, async () => {
+    const record = await getAnimeRecord(env, slug);
+    if (!record) return error("NOT_FOUND", "Anime not found", 404, origin);
+    return { anime: toMedia(record), library: { animeId: record.anime_id, source: record.source } };
+  }, "anime-detail-v1");
 }
 
-async function handleEpisodes(request, env, slug, origin) {
+async function handleEpisodes(request, env, ctx, slug, origin) {
   if (!isValidAnimeId(slug)) {
     return error("INVALID_ANIME_ID", "Invalid anime identifier", 400, origin);
   }
@@ -1836,44 +1858,40 @@ async function handleEpisodes(request, env, slug, origin) {
   const numbersOnly = url.searchParams.get("numbersOnly") === "1";
   const offset = Math.max(Number.parseInt(url.searchParams.get("offset") ?? "0", 10) || 0, 0);
   const limit = Math.min(Math.max(Number.parseInt(url.searchParams.get("limit") ?? "50", 10) || 50, 1), 100);
-  const record = await env.DB.prepare(
-    `SELECT anime_id FROM anime WHERE anime_id = ?1 AND ${PUBLIC_ANIME_PREDICATE} LIMIT 1`
-  ).bind(slug).first();
-  if (!record) return error("NOT_FOUND", "Anime not found", 404, origin);
+  return cachedJson(request, origin, ctx, 300, async () => {
+    const record = await env.DB.prepare(
+      `SELECT anime_id FROM anime WHERE anime_id = ?1 AND ${PUBLIC_ANIME_PREDICATE} LIMIT 1`
+    ).bind(slug).first();
+    if (!record) return error("NOT_FOUND", "Anime not found", 404, origin);
 
-  if (Number.isInteger(episodeNumber) && episodeNumber > 0) {
-    const episode = await env.DB.prepare(
-      "SELECT episode_num, video_url FROM episodes WHERE anime_id = ?1 AND episode_num = ?2 LIMIT 1"
-    ).bind(slug, episodeNumber).first();
-    if (!episode) return error("EPISODE_NOT_FOUND", "Episode not found", 404, origin);
-    return json({
+    if (Number.isInteger(episodeNumber) && episodeNumber > 0) {
+      const episode = await env.DB.prepare(
+        "SELECT episode_num, video_url FROM episodes WHERE anime_id = ?1 AND episode_num = ?2 LIMIT 1"
+      ).bind(slug, episodeNumber).first();
+      if (!episode) return error("EPISODE_NOT_FOUND", "Episode not found", 404, origin);
+      return { animeId: slug, item: { episodeNumber: episode.episode_num, videoUrl: episode.video_url } };
+    }
+
+    if (numbersOnly) {
+      const episodes = await env.DB.prepare(
+        "SELECT episode_num FROM episodes WHERE anime_id = ?1 ORDER BY episode_num ASC"
+      ).bind(slug).all();
+      return { animeId: slug, episodeNumbers: episodes.results.map((episode) => episode.episode_num) };
+    }
+
+    const [episodes, count] = await env.DB.batch([
+      env.DB.prepare(
+        "SELECT episode_num, video_url FROM episodes WHERE anime_id = ?1 ORDER BY episode_num ASC LIMIT ?2 OFFSET ?3"
+      ).bind(slug, limit, offset),
+      env.DB.prepare("SELECT COUNT(*) AS total FROM episodes WHERE anime_id = ?1").bind(slug)
+    ]);
+    const total = count.results[0]?.total ?? 0;
+    return {
       animeId: slug,
-      item: { episodeNumber: episode.episode_num, videoUrl: episode.video_url }
-    }, 200, origin);
-  }
-
-  if (numbersOnly) {
-    const episodes = await env.DB.prepare(
-      "SELECT episode_num FROM episodes WHERE anime_id = ?1 ORDER BY episode_num ASC"
-    ).bind(slug).all();
-    return json({
-      animeId: slug,
-      episodeNumbers: episodes.results.map((episode) => episode.episode_num)
-    }, 200, origin, "private, max-age=300");
-  }
-
-  const [episodes, count] = await env.DB.batch([
-    env.DB.prepare(
-      "SELECT episode_num, video_url FROM episodes WHERE anime_id = ?1 ORDER BY episode_num ASC LIMIT ?2 OFFSET ?3"
-    ).bind(slug, limit, offset),
-    env.DB.prepare("SELECT COUNT(*) AS total FROM episodes WHERE anime_id = ?1").bind(slug)
-  ]);
-  const total = count.results[0]?.total ?? 0;
-  return json({
-    animeId: slug,
-    items: episodes.results,
-    pageInfo: { offset, limit, total, hasMore: offset + episodes.results.length < total }
-  }, 200, origin);
+      items: episodes.results,
+      pageInfo: { offset, limit, total, hasMore: offset + episodes.results.length < total }
+    };
+  }, "episodes-v1");
 }
 
 function decodeIdentityHeader(request, name) {
@@ -1905,36 +1923,25 @@ function parseWatchedEpisodes(value) {
   }
 }
 
-async function getOrCreateGoogleAccount(request, env, origin) {
+async function getGoogleAccount(request, env, origin, updateLastLogin = false) {
   const email = decodeIdentityHeader(request, "X-RioAnime-User-Email").toLowerCase();
-  const displayName = decodeIdentityHeader(request, "X-RioAnime-User-Name");
   if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return { response: error("INVALID_USER", "A valid signed-in user is required", 400, origin) };
   }
 
-  const usernameBase = (displayName || email.split("@")[0])
-    .normalize("NFKD")
-    .replace(/[^a-z0-9]+/gi, "_")
-    .replace(/^_+|_+$/g, "")
-    .slice(0, 40)
-    .toLowerCase() || "member";
-  const username = `${usernameBase}_${(await hashKey(email)).slice(0, 8)}`;
-
-  await env.DB.prepare(
-    `INSERT INTO accounts
-       (id, email, username, password_hash, role, status, email_verified_at, last_login_at)
-     VALUES (?1, ?2, ?3, 'oauth:google', 'member', 'active', datetime('now'), datetime('now'))
-     ON CONFLICT(email) DO UPDATE SET
-       last_login_at = datetime('now'), updated_at = datetime('now')`
-  ).bind(createId(), email, username).run();
-
   const account = await env.DB.prepare(
     "SELECT id, email, username, role, status FROM accounts WHERE email = ?1 COLLATE NOCASE LIMIT 1"
   ).bind(email).first();
-  if (!account || account.status !== "active") {
+  if (!account) {
+    return { response: error("ACCOUNT_NOT_REGISTERED", "This account is not registered", 403, origin) };
+  }
+  if (account.status !== "active") {
     return { response: error("ACCOUNT_UNAVAILABLE", "This account is not active", 403, origin) };
   }
 
+  if (updateLastLogin) {
+    await env.DB.prepare("UPDATE accounts SET last_login_at = datetime('now') WHERE id = ?1").bind(account.id).run();
+  }
   return { account };
 }
 
@@ -2080,13 +2087,13 @@ async function handleUserSync(request, env, origin) {
     return error("METHOD_NOT_ALLOWED", "Method not allowed", 405, origin);
   }
 
-  const identity = await getOrCreateGoogleAccount(request, env, origin);
+  const identity = await getGoogleAccount(request, env, origin, true);
   if (identity.response) return identity.response;
   return json({ account: identity.account }, 200, origin);
 }
 
 async function handleUserLibrary(request, env, origin) {
-  const identity = await getOrCreateGoogleAccount(request, env, origin);
+  const identity = await getGoogleAccount(request, env, origin);
   if (identity.response) return identity.response;
   if (request.method === "GET") {
     return json(await readUserLibrary(env, identity.account.id), 200, origin);
@@ -2119,7 +2126,7 @@ async function routeRequest(request, env, ctx, origin) {
     return json({ status: "ok" }, 200, origin);
   }
   if (path === "/v1/dashboard") return handleDashboard(env, origin);
-  if (path === "/v1/cache-manifest") return handleCacheManifest(env, origin);
+  if (path === "/v1/cache-manifest") return handleCacheManifest(request, env, ctx, origin);
   if (path === "/v1/home") return handleHome(request, env, ctx, origin);
   if (path === "/v1/browse") return handleBrowse(request, env, ctx, origin);
   if (path === "/v1/anime/a-z") return handleAlphabeticalCatalog(request, env, ctx, origin);
@@ -2127,9 +2134,9 @@ async function routeRequest(request, env, ctx, origin) {
   if (path === "/v1/announcements") return handlePublicAnnouncements(request, env, origin, ctx);
 
   const episodeMatch = path.match(/^\/v1\/anime\/([^/]+)\/episodes$/);
-  if (episodeMatch) return handleEpisodes(request, env, decodeURIComponent(episodeMatch[1]), origin);
+  if (episodeMatch) return handleEpisodes(request, env, ctx, decodeURIComponent(episodeMatch[1]), origin);
   const detailMatch = path.match(/^\/v1\/anime\/([^/]+)$/);
-  if (detailMatch) return handleAnimeDetail(env, decodeURIComponent(detailMatch[1]), origin);
+  if (detailMatch) return handleAnimeDetail(request, env, ctx, decodeURIComponent(detailMatch[1]), origin);
   return error("NOT_FOUND", "Route not found", 404, origin);
 }
 
@@ -2187,7 +2194,8 @@ const worker = {
     if (policyResponse) return policyResponse;
 
     const startedAt = Date.now();
-    if (authenticatedKey.metricsId) {
+    const metricWeight = successMetricWeight(request);
+    if (authenticatedKey.metricsId && metricWeight) {
       ctx.waitUntil(
         env.DB.prepare("UPDATE api_keys SET last_used_at = datetime('now') WHERE id = ?1")
           .bind(authenticatedKey.metricsId).run()
@@ -2197,12 +2205,12 @@ const worker = {
     try {
       const response = await routeRequest(request, env, ctx, origin);
       const duration = Date.now() - startedAt;
-      // Keep dashboard totals and API-key limits accurate, including cached responses.
+      const responseMetricWeight = response.status >= 400 ? 1 : metricWeight;
       ctx.waitUntil(
         Promise.all([
-          recordRequestMetric(env, path, response.status, duration),
-          recordApiKeyMetric(env, authenticatedKey.metricsId, path, response.status, duration),
-          recordApiKeyPolicyUsage(env, authenticatedKey.id, response)
+          responseMetricWeight ? recordRequestMetric(env, path, response.status, duration, responseMetricWeight) : Promise.resolve(),
+          responseMetricWeight ? recordApiKeyMetric(env, authenticatedKey.metricsId, path, response.status, duration, responseMetricWeight) : Promise.resolve(),
+          recordApiKeyPolicyUsage(env, authenticatedKey, response)
         ]).catch((cause) => console.error("RioAnime API metric recording failed", cause))
       );
       return response;

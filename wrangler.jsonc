@@ -6,7 +6,7 @@
   "workers_dev": false,
   "routes": [
     {
-      "pattern": "api.rioanime.deze.me",
+      "pattern": "api.rioanime.dezely.com",
       "custom_domain": true
     }
   ],

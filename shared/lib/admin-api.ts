@@ -2,7 +2,7 @@ import "server-only";
 
 import { getAdminSession } from "@/shared/lib/admin-auth";
 
-const API_URL = process.env.RIOANIME_API_URL ?? "https://api.rioanime.deze.me";
+const API_URL = process.env.RIOANIME_API_URL ?? "https://api.rioanime.dezely.com";
 
 export async function requestAdminApi(path: string, init?: RequestInit) {
   const [session, apiKey] = await Promise.all([

@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 
-const API_URL = process.env.RIOANIME_API_URL ?? "https://api.rioanime.deze.me";
+const API_URL = process.env.RIOANIME_API_URL ?? "https://api.rioanime.dezely.com";
 
 export const dynamic = "force-dynamic";
 

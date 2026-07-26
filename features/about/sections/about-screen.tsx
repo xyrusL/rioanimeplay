@@ -81,9 +81,9 @@ const CONTACTS = [
   {
     icon: "mail",
     label: "Email us",
-    value: "rioanime@deze.me",
+    value: "rioanime@dezely.com",
     action: "Send email",
-    href: "mailto:rioanime@deze.me",
+    href: "mailto:rioanime@dezely.com",
     cardClass: "hover:border-[#e35d91]/50 hover:shadow-[0_18px_45px_rgba(227,93,145,.12)]",
     iconClass: "bg-[linear-gradient(135deg,#f078a6,#c83f76)] shadow-[0_0_22px_rgba(227,93,145,.3)]",
     valueClass: "text-[#f07eaa]",

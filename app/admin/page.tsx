@@ -56,7 +56,7 @@ function AdminLogin({ error, signedInEmail }: { error?: string; signedInEmail?: 
             <div className="mt-4 text-center">
               <p className="font-display text-[0.72rem] uppercase tracking-[0.24em] text-[var(--accent-strong)]">RioAnime Admin</p>
               <h1 className="mt-3 text-[2rem] leading-[1.02] font-semibold text-white">Welcome Back</h1>
-              <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">Sign in to manage API access and platform usage.</p>
+              <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">Sign in to continue to the RioAnime administration console.</p>
             </div>
             {error === "account" ? <div className="mt-5 rounded-[18px] border border-[rgba(255,120,150,0.26)] bg-[rgba(255,120,150,0.08)] px-4 py-3 text-sm text-[#ffc3d1]">Invalid admin account{signedInEmail ? `: ${signedInEmail}` : "."} This account does not have active administrator access.</div> : null}
             <form action={signInAdminWithGoogle} className="mt-5">

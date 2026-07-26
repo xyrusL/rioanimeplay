@@ -13,5 +13,4 @@ CREATE TABLE IF NOT EXISTS allowed_domains (
 INSERT OR IGNORE INTO domain_lock_settings (id, enabled) VALUES (1, 1);
 INSERT OR IGNORE INTO allowed_domains (origin) VALUES
   ('http://localhost:3000'),
-  ('https://rioanime.deze.me'),
-  ('https://rioanimeplay.deze.me');
+  ('https://rioanime.dezely.com');

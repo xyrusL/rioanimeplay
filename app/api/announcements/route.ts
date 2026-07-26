@@ -1,4 +1,4 @@
-const API_URL = process.env.RIOANIME_API_URL ?? "https://api.rioanime.deze.me";
+const API_URL = process.env.RIOANIME_API_URL ?? "https://api.rioanime.dezely.com";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +19,7 @@ export async function GET(request: Request) {
       }
     });
     if (response.status === 304) return new Response(null, { status: 304, headers: { ETag: response.headers.get("ETag") ?? "" } });
-    return new Response(await response.text(), { status: response.status, headers: { "Content-Type": "application/json", ETag: response.headers.get("ETag") ?? "", "Cache-Control": "public, max-age=30, stale-while-revalidate=60" } });
+    return new Response(await response.text(), { status: response.status, headers: { "Content-Type": "application/json", ETag: response.headers.get("ETag") ?? "", "Cache-Control": "public, s-maxage=30, stale-while-revalidate=300, stale-if-error=86400" } });
   } catch {
     return Response.json({ items: [] }, { status: 503, headers: { "Cache-Control": "private, no-store" } });
   }

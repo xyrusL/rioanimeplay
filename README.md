@@ -98,7 +98,7 @@ The important implementation chain is:
 app/page.tsx
   -> features/home/model/home-page-data.ts
   -> entities/anime/api/catalog.ts
-  -> https://api.rioanime.deze.me/v1/home
+  -> https://api.rioanime.dezely.com/v1/home
   -> worker.js:handleHome()
   -> env.DB.batch(...)
   -> Cloudflare D1
@@ -317,6 +317,14 @@ AUTH_GOOGLE_SECRET=replace-with-your-google-client-secret
 ADMIN_SESSION_SECRET=replace-with-another-long-random-value
 ```
 
+Configure these exact Google OAuth authorized redirect URIs so sign-in works from every retained site hostname:
+
+```text
+http://localhost:3000/api/auth/callback/google
+https://rioanime.dezely.com/api/auth/callback/google
+https://rioanimeplay.vercel.app/api/auth/callback/google
+```
+
 Configure the matching `API_KEY` Worker secret through Wrangler rather than committing it to the repository.
 
 ### Run Locally
@@ -356,7 +364,7 @@ Remote migrations, synchronization, and deployment modify live infrastructure an
 User
   -> RioAnime Next.js site
   -> server-side API request
-  -> api.rioanime.deze.me
+  -> api.rioanime.dezely.com
   -> rioanime-api Cloudflare Worker
   -> rioanime-db Cloudflare D1
 ```

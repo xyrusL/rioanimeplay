@@ -186,7 +186,9 @@ export function SmartVideoPlayer({
     return () => controller.abort();
   }, [animeId, episodeNumber, reloadKey, reloadToken]);
 
-  const containerClass = `relative isolate w-full overflow-hidden bg-black ${compactControls ? "rioanime-player--compact h-[240px]" : "aspect-video"} ${className ?? ""}`;
+  const isCompactGoogleDrive =
+    compactControls && source?.kind === "iframe" && source.provider === "gdrive";
+  const containerClass = `relative isolate w-full overflow-hidden bg-black ${compactControls ? `rioanime-player--compact ${isCompactGoogleDrive ? "aspect-video" : "h-[240px]"}` : "aspect-video"} ${className ?? ""}`;
 
   if (error) {
     return (
@@ -246,7 +248,11 @@ export function SmartVideoPlayer({
     <div className={containerClass}>
       <iframe
         key={source.url}
-        className="h-full w-full border-0 bg-black"
+        className={
+          source.provider === "gdrive"
+            ? "absolute inset-0 block h-full w-full max-w-full border-0 bg-black"
+            : "h-full w-full border-0 bg-black"
+        }
         src={source.url}
         title={`${title} episode ${episodeNumber}`}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"

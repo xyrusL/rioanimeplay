@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 
-const API_URL = process.env.RIOANIME_API_URL ?? "https://api.rioanime.deze.me";
+const API_URL = process.env.RIOANIME_API_URL ?? "https://api.rioanime.dezely.com";
 
 async function syncGoogleMember(name: string, email: string) {
   const apiKey = process.env.RIOANIME_API_KEY;
@@ -25,7 +25,7 @@ async function syncGoogleMember(name: string, email: string) {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  providers: [Google],
+  providers: [Google({ authorization: { params: { prompt: "select_account" } } })],
   pages: {
     signIn: "/account",
     error: "/account"
@@ -42,6 +42,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         await syncGoogleMember(user.name?.trim() || email.split("@")[0], email);
       } catch (cause) {
         console.error("RioAnime Google member sync failed", cause);
+        return false;
       }
 
       return true;

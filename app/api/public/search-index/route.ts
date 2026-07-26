@@ -6,7 +6,7 @@ export async function GET() {
   try {
     const results = await getAnimeSearchCatalog();
     return Response.json({ results }, {
-      headers: { "Cache-Control": "private, max-age=60, stale-while-revalidate=300" }
+      headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600, stale-if-error=86400" }
     });
   } catch {
     return Response.json(
