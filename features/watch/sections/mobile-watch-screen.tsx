@@ -220,7 +220,7 @@ export function MobileWatchScreen({ anime }: MobileWatchScreenProps) {
             </div>
 
             <div className="mt-4 max-h-[216px] overflow-y-auto pr-1">
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-4 gap-1.5">
                 {episodeNumbers.map((episodeNumber) => (
                   <button
                     key={episodeNumber}

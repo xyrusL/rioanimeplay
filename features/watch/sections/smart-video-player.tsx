@@ -23,6 +23,7 @@ type EpisodeResponse = {
 };
 
 const MINIMUM_LOADING_DURATION_MS = 1300;
+const MINIMUM_GOOGLE_DRIVE_VIEWPORT_HEIGHT = 300;
 
 function LoadingCover({ episodeNumber, poster }: { episodeNumber: number; poster: string }) {
   return (
@@ -148,6 +149,8 @@ export function SmartVideoPlayer({
   const [reloadKey, setReloadKey] = useState(0);
   const [isIframeLoading, setIsIframeLoading] = useState(false);
   const [minimumLoadingComplete, setMinimumLoadingComplete] = useState(false);
+  const googleDriveWrapperRef = useRef<HTMLDivElement>(null);
+  const googleDriveIframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     setMinimumLoadingComplete(false);
@@ -185,6 +188,33 @@ export function SmartVideoPlayer({
 
     return () => controller.abort();
   }, [animeId, episodeNumber, reloadKey, reloadToken]);
+
+  useEffect(() => {
+    if (source?.kind !== "iframe" || source.provider !== "gdrive") return;
+
+    const wrapper = googleDriveWrapperRef.current;
+    const iframe = googleDriveIframeRef.current;
+    if (!wrapper || !iframe) return;
+
+    function fitGoogleDriveViewport() {
+      const { width, height } = wrapper.getBoundingClientRect();
+      if (!width || !height) return;
+
+      const viewportHeight = Math.max(height, MINIMUM_GOOGLE_DRIVE_VIEWPORT_HEIGHT);
+      const scale = height / viewportHeight;
+      iframe.style.width = `${width / scale}px`;
+      iframe.style.height = `${viewportHeight}px`;
+      iframe.style.maxWidth = "none";
+      iframe.style.maxHeight = "none";
+      iframe.style.transform = `scale(${scale})`;
+      iframe.style.transformOrigin = "top left";
+    }
+
+    fitGoogleDriveViewport();
+    const observer = new ResizeObserver(fitGoogleDriveViewport);
+    observer.observe(wrapper);
+    return () => observer.disconnect();
+  }, [source]);
 
   const isCompactGoogleDrive =
     compactControls && source?.kind === "iframe" && source.provider === "gdrive";
@@ -247,6 +277,7 @@ export function SmartVideoPlayer({
   return (
     <div className={containerClass}>
       <div
+        ref={source.provider === "gdrive" ? googleDriveWrapperRef : undefined}
         className={
           source.provider === "gdrive"
             ? "absolute inset-0 min-h-0 min-w-0 overflow-hidden bg-black [contain:layout_paint_size]"
@@ -254,6 +285,7 @@ export function SmartVideoPlayer({
         }
       >
         <iframe
+          ref={source.provider === "gdrive" ? googleDriveIframeRef : undefined}
           key={source.url}
           width="100%"
           height="100%"
