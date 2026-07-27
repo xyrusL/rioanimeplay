@@ -166,35 +166,35 @@ export function SearchAutocomplete({
             </>
           ) : (
             <>
-              <div className="max-h-[520px] overflow-y-auto bg-[#181820]">
+              <div className="max-h-[min(360px,calc(100dvh-15rem))] overflow-y-auto bg-[#181820] sm:max-h-[520px]">
                 {results.slice(0, resultLimit).map((result) => (
                   <Link
                     key={result.id}
                     href={result.href}
                     onClick={() => setIsOpen(false)}
-                    className="flex cursor-pointer items-center gap-3 border-b border-[rgba(255,255,255,0.05)] bg-[#181820] px-5 py-4 transition-[background-color] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:bg-[#22222c]"
+                    className="flex cursor-pointer items-center gap-2.5 border-b border-[rgba(255,255,255,0.05)] bg-[#181820] px-3 py-2.5 transition-[background-color] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:bg-[#22222c] sm:gap-3 sm:px-5 sm:py-4"
                   >
-                    <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-[18px] border border-[rgba(255,255,255,0.08)]">
+                    <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-[rgba(255,255,255,0.08)] sm:h-[72px] sm:w-[72px] sm:rounded-[18px]">
                       <Image
                         fill
                         alt={result.title}
                         className="object-cover"
-                        sizes="72px"
+                        sizes="(max-width: 639px) 56px, 72px"
                         src={result.coverImage}
                       />
                     </div>
-                    <div className="min-w-0 space-y-2">
+                    <div className="min-w-0 space-y-1 sm:space-y-2">
                       <div>
-                        <p className="line-clamp-1 text-[1rem] font-semibold text-[var(--text-primary)]">
+                        <p className="line-clamp-1 text-[0.9rem] font-semibold text-[var(--text-primary)] sm:text-[1rem]">
                           {result.title}
                         </p>
                         {result.alternateTitles.length > 0 ? (
-                          <p className="line-clamp-1 text-[0.84rem] text-[var(--text-muted)]">
+                          <p className="line-clamp-1 text-[0.74rem] text-[var(--text-muted)] sm:text-[0.84rem]">
                             {result.alternateTitles.join("; ")}
                           </p>
                         ) : null}
                       </div>
-                      <div className="flex flex-wrap items-center gap-2 text-[0.72rem] text-[var(--text-secondary)]">
+                      <div className="flex flex-wrap items-center gap-1 text-[0.64rem] text-[var(--text-secondary)] sm:gap-2 sm:text-[0.72rem]">
                         <span className="inline-flex items-center gap-1 rounded-[9px] border border-[rgba(255,122,73,0.34)] bg-[rgba(255,122,73,0.12)] px-1.5 py-0.5 font-semibold text-[#ff8b58]">
                           <MaterialIcon className="text-[12px]" name="movie" />
                           {result.episodesLabel}
@@ -219,7 +219,7 @@ export function SearchAutocomplete({
               <Link
                 href={buildResultsHref()}
                 onClick={() => setIsOpen(false)}
-                className="flex cursor-pointer items-center justify-center border-t border-[rgba(255,255,255,0.05)] bg-[#181820] px-5 py-4 text-center text-[0.95rem] font-semibold text-[var(--text-muted)] transition-colors duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:text-[var(--text-primary)]"
+                className="flex cursor-pointer items-center justify-center border-t border-[rgba(255,255,255,0.05)] bg-[#181820] px-4 py-3 text-center text-[0.86rem] font-semibold text-[var(--text-muted)] transition-colors duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:text-[var(--text-primary)] sm:px-5 sm:py-4 sm:text-[0.95rem]"
               >
                 View matching results
                 <span className="ml-1 inline-block align-middle">
