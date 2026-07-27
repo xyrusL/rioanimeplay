@@ -248,8 +248,8 @@ export function ReportIssueModal({ animeId, animeTitle, currentEpisode, episodeN
         onClose={busy ? undefined : onClose}
         closeOnBackdrop={!busy}
         labelledBy="report-issue-title"
-        backdropClassName="bg-[#05070b]/88 p-3 backdrop-blur-md"
-        panelClassName="flex max-h-[calc(100dvh-24px)] w-full max-w-2xl flex-col overflow-hidden rounded-[24px] border border-white/12 bg-[radial-gradient(circle_at_top_left,rgba(244,63,122,0.08),transparent_36%),linear-gradient(150deg,#151821,#0c0f16)] text-white shadow-[0_30px_90px_rgba(0,0,0,0.72)]"
+        backdropClassName="bg-[#05070b]/88 p-0 backdrop-blur-md sm:p-3"
+        panelClassName="flex max-h-[calc(100dvh-20px)] w-full max-w-2xl self-end flex-col overflow-hidden rounded-t-[30px] border border-white/12 bg-[radial-gradient(circle_at_top_left,rgba(244,63,122,0.08),transparent_36%),linear-gradient(150deg,#151821,#0c0f16)] text-white shadow-[0_30px_90px_rgba(0,0,0,0.72)] sm:max-h-[calc(100dvh-24px)] sm:self-auto sm:rounded-[24px]"
       >
         {submitted ? (
           <div className="p-7 text-center sm:p-9">
@@ -265,41 +265,42 @@ export function ReportIssueModal({ animeId, animeTitle, currentEpisode, episodeN
           </div>
         ) : (
           <>
-            <header className="flex shrink-0 items-center justify-between gap-4 border-b border-white/8 px-5 py-4 sm:px-7">
-              <div className="flex items-center gap-3">
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-rose-400/25 bg-gradient-to-br from-rose-400/25 to-pink-500/10 text-rose-300 shadow-[0_0_24px_rgba(244,63,122,0.12)]">
-                  <MaterialIcon className="text-[23px]" filled name="error" />
+            <span className="mx-auto mt-3 block h-1.5 w-12 shrink-0 rounded-full bg-white/20 sm:hidden" />
+            <header className="flex shrink-0 items-center justify-between gap-4 px-6 pb-5 pt-8 sm:border-b sm:border-white/8 sm:px-7 sm:py-4">
+              <div className="flex min-w-0 items-center gap-4 sm:gap-3">
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-rose-400/25 bg-gradient-to-br from-rose-400/25 to-pink-500/10 text-rose-300 shadow-[0_0_24px_rgba(244,63,122,0.12)] sm:h-11 sm:w-11">
+                  <MaterialIcon className="text-[25px] sm:text-[23px]" filled name="error" />
                 </span>
-                <div>
-                  <h2 id="report-issue-title" className="text-lg font-bold">Report a problem</h2>
-                  <p className="mt-0.5 text-xs text-white/45">Help us improve your watching experience.</p>
+                <div className="min-w-0">
+                  <h2 id="report-issue-title" className="text-xl font-bold sm:text-lg">Report a problem</h2>
+                  <p className="mt-1 text-sm leading-5 text-white/50 sm:mt-0.5 sm:text-xs">Help us improve your watching experience.</p>
                 </div>
               </div>
-              <button type="button" disabled={busy} onClick={onClose} aria-label="Close report dialog" className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.025] text-white/60 hover:bg-white/8 hover:text-white">
-                <MaterialIcon className="text-[19px]" name="close" />
+              <button type="button" disabled={busy} onClick={onClose} aria-label="Close report dialog" className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.025] text-white/60 hover:bg-white/8 hover:text-white sm:h-9 sm:w-9">
+                <MaterialIcon className="text-[24px] sm:text-[19px]" name="close" />
               </button>
             </header>
             <form onSubmit={submitReport} className="flex min-h-0 flex-1 flex-col">
-              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4 sm:px-7 sm:py-5">
-                <label className="block text-xs font-semibold text-white/65">
+              <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 pb-5 pt-3 sm:space-y-4 sm:px-7 sm:py-5">
+                <label className="block text-sm font-semibold text-white/65 sm:text-xs">
                   Anime title
-                  <span className="mt-2 flex h-12 items-center gap-3 rounded-xl border border-white/10 bg-white/[0.035] px-4 text-sm text-white/80">
-                    <MaterialIcon className="text-[19px] text-rose-300" filled name="lock" />
-                    <span className="min-w-0 flex-1 truncate font-semibold">{animeTitle}</span>
+                  <span className="mt-2 flex min-h-14 items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-3 text-base leading-6 text-white/85 sm:min-h-12 sm:rounded-xl sm:py-2 sm:text-sm sm:leading-5">
+                    <MaterialIcon className="shrink-0 text-[21px] text-rose-300 sm:text-[19px]" filled name="lock" />
+                    <span className="min-w-0 flex-1 break-words font-semibold">{animeTitle}</span>
                   </span>
                 </label>
 
-                <div className="grid gap-4 sm:grid-cols-[1.35fr_0.65fr]">
-                  <label className="block text-xs font-semibold text-white/65">
+                <div className="grid grid-cols-[minmax(0,1fr)_7.5rem] gap-3 sm:grid-cols-[1.35fr_0.65fr] sm:gap-4">
+                  <label className="block min-w-0 text-[13px] font-semibold text-white/65 sm:text-xs">
                     Your name <span className="font-normal text-white/35">(optional)</span>
                     <span className="relative mt-2 block">
-                      <MaterialIcon className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[19px] text-rose-300/80" name="person" />
-                      <input value={reporterName} onChange={(event) => setReporterName(event.target.value)} maxLength={60} autoComplete="name" placeholder="How should we address you?" className="h-11 w-full rounded-xl border border-white/10 bg-black/15 pl-11 pr-14 text-sm text-white outline-none placeholder:text-white/28 focus:border-rose-300/45" />
+                      <MaterialIcon className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[21px] text-rose-300/80 sm:text-[19px]" name="person" />
+                      <input value={reporterName} onChange={(event) => setReporterName(event.target.value)} maxLength={60} autoComplete="name" placeholder="How should we address you?" className="h-16 w-full rounded-2xl border border-white/10 bg-black/15 pl-11 pr-11 text-sm leading-5 text-white outline-none placeholder:text-white/28 focus:border-rose-300/45 sm:h-11 sm:rounded-xl sm:pr-14" />
                       <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[0.65rem] font-normal text-white/30">{reporterName.length}/60</span>
                     </span>
                   </label>
 
-                  <div className="block text-xs font-semibold text-white/65">
+                  <div className="block min-w-0 text-[13px] font-semibold text-white/65 sm:text-xs">
                     <p>Episode</p>
                     <div ref={episodeMenuRef} className="relative mt-2">
                       <button
@@ -307,7 +308,7 @@ export function ReportIssueModal({ animeId, animeTitle, currentEpisode, episodeN
                         aria-haspopup="listbox"
                         aria-expanded={episodeMenuOpen}
                         onClick={() => setEpisodeMenuOpen((open) => !open)}
-                        className={`flex h-11 w-full items-center gap-3 rounded-xl border bg-[#0d1017] px-3.5 text-sm font-semibold text-white outline-none transition ${episodeMenuOpen ? "border-rose-300/65 ring-2 ring-rose-400/10" : "border-white/10 hover:border-white/20"}`}
+                        className={`flex h-16 w-full items-center gap-1.5 rounded-2xl border bg-[#0d1017] px-2.5 text-[13px] font-semibold text-white outline-none transition sm:h-11 sm:gap-3 sm:rounded-xl sm:px-3.5 sm:text-sm ${episodeMenuOpen ? "border-rose-300/65 ring-2 ring-rose-400/10" : "border-white/10 hover:border-white/20"}`}
                       >
                         <MaterialIcon className="text-[19px] text-rose-300/80" name="video_library" />
                         <span className="flex-1 text-left">EP {episodeNumber}</span>
@@ -338,37 +339,41 @@ export function ReportIssueModal({ animeId, animeTitle, currentEpisode, episodeN
                   </div>
                 </div>
 
-                <label className="block text-xs font-semibold text-white/65">
+                <label className="block text-sm font-semibold text-white/65 sm:text-xs">
                   Message
                   <span className="relative mt-2 block">
                     <MaterialIcon className="pointer-events-none absolute left-3.5 top-3.5 text-[20px] text-rose-300/80" name="edit_note" />
-                    <textarea value={message} onChange={(event) => setMessage(event.target.value)} maxLength={2000} rows={4} placeholder="Describe what happened so we can investigate and fix it." className={`min-h-[116px] w-full resize-none rounded-xl border bg-black/15 py-3 pl-11 pr-4 text-sm leading-6 text-white outline-none placeholder:text-white/28 ${message && !isMeaningfulMessage(message.trim()) ? "border-amber-300/35 focus:border-amber-300/60" : "border-white/10 focus:border-rose-300/45"}`} />
+                    <textarea value={message} onChange={(event) => setMessage(event.target.value)} maxLength={2000} rows={4} placeholder="Describe what happened so we can investigate and fix it." className={`min-h-[165px] w-full resize-none rounded-2xl border bg-black/15 py-3 pl-11 pr-4 text-sm leading-6 text-white outline-none placeholder:text-white/28 sm:min-h-[116px] sm:rounded-xl ${message && !isMeaningfulMessage(message.trim()) ? "border-amber-300/35 focus:border-amber-300/60" : "border-white/10 focus:border-rose-300/45"}`} />
                     <span className="pointer-events-none absolute bottom-3 right-3 text-[0.65rem] font-normal text-white/30">{message.length}/2000</span>
                   </span>
                   {message && !isMeaningfulMessage(message.trim()) ? <span className="mt-1.5 block text-[0.66rem] font-normal text-amber-200/70">Use at least a few clear words describing the problem.</span> : null}
                 </label>
 
-                <div className="flex flex-col gap-2 rounded-xl border border-white/8 bg-black/15 p-2.5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center justify-between gap-2 rounded-2xl border border-white/8 bg-black/15 p-3 sm:rounded-xl sm:p-2.5">
                   <div className="min-w-0 sm:pl-1">
-                    <p className="flex items-center gap-1.5 text-xs font-semibold text-white/65"><MaterialIcon className="text-[16px] text-rose-300" name="verified_user" /> Security check</p>
+                    <p className="flex items-center gap-1.5 text-sm font-semibold text-white/75 sm:text-xs"><MaterialIcon className="text-[18px] text-rose-300 sm:text-[16px]" name="verified_user" /> Security check</p>
                     <p className="mt-0.5 text-[0.62rem] leading-4 text-white/32">Protected by Cloudflare.</p>
                   </div>
-                  <div className="relative h-[52px] w-[240px] shrink-0 overflow-hidden rounded-md">
-                    <div ref={challengeContainerRef} className="absolute left-0 top-0 w-[300px] origin-top-left scale-80" />
+                  <div className="relative h-[45px] w-[190px] shrink-0 overflow-hidden rounded-md sm:h-[52px] sm:w-[240px]">
+                    <div ref={challengeContainerRef} className="absolute left-0 top-0 w-[300px] origin-top-left scale-[0.68] sm:scale-80" />
                   </div>
                   {!siteKey ? <p className="py-1 text-xs text-amber-200/80">Report verification is not configured.</p> : null}
                 </div>
 
                 {error ? <p role="alert" className="rounded-xl border border-rose-400/20 bg-rose-400/8 px-3.5 py-3 text-xs leading-5 text-rose-200">{error}</p> : null}
               </div>
-              <footer className="flex shrink-0 items-center justify-between gap-3 border-t border-white/8 bg-[#0d1017]/96 px-5 py-3.5 sm:px-7">
+              <footer className="flex shrink-0 flex-col gap-3 bg-[#0d1017]/96 px-6 pb-[max(20px,env(safe-area-inset-bottom))] pt-3 sm:flex-row sm:items-center sm:justify-between sm:border-t sm:border-white/8 sm:px-7 sm:py-3.5">
+                <p className="flex h-12 w-full items-center gap-2 rounded-2xl border border-white/8 bg-black/15 px-4 text-xs leading-4 text-white/38 sm:hidden">
+                  <MaterialIcon className="text-[18px] text-rose-300" name="lock" />
+                  Your report stays private.
+                </p>
                 <p className="hidden items-center gap-2 text-[0.66rem] leading-4 text-white/38 sm:flex">
                   <MaterialIcon className="text-[17px] text-rose-300" name="verified_user" />
                   Your report stays private.
                 </p>
-                <div className="ml-auto flex items-center gap-2">
-                  <button type="button" disabled={busy} onClick={onClose} className="h-9 rounded-xl border border-white/8 px-4 text-xs font-bold text-white/55 hover:bg-white/5 hover:text-white">Cancel</button>
-                  <button type="submit" disabled={busy || !challengeToken || !siteKey} className="inline-flex h-9 items-center gap-2 rounded-xl bg-gradient-to-r from-rose-400 to-pink-500 px-4 text-xs font-bold text-white shadow-[0_7px_22px_rgba(244,63,122,0.22)] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45">
+                <div className="flex w-full items-center gap-3 sm:ml-auto sm:w-auto sm:gap-2">
+                  <button type="button" disabled={busy} onClick={onClose} className="h-14 flex-1 rounded-2xl border border-white/8 px-4 text-sm font-bold text-white/65 hover:bg-white/5 hover:text-white sm:h-9 sm:flex-none sm:rounded-xl sm:text-xs">Cancel</button>
+                  <button type="submit" disabled={busy || !challengeToken || !siteKey} className="inline-flex h-14 flex-[1.2] items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-rose-400 to-pink-500 px-4 text-sm font-bold text-white shadow-[0_7px_22px_rgba(244,63,122,0.22)] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45 sm:h-9 sm:flex-none sm:rounded-xl sm:text-xs">
                   <MaterialIcon className="text-[17px]" name="send" />
                   {busy ? "Sending..." : "Send report"}
                   </button>
