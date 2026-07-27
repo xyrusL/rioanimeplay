@@ -1,4 +1,4 @@
-export const ADMIN_TABS = ["overview", "content", "member", "api", "status", "activity", "setting"] as const;
+export const ADMIN_TABS = ["overview", "content", "member", "api", "status", "report", "activity", "setting"] as const;
 export type AdminTab = (typeof ADMIN_TABS)[number];
 
 export function resolveAdminTab(value: string | null | undefined): AdminTab {

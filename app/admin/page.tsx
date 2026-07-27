@@ -118,5 +118,5 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     getSiteSettings(),
     activeTab === "setting" ? fetchAdminProfile().catch(() => null) : null
   ]);
-  return <AdminDashboard activeTab={activeTab} data={data} initialAppearance={settings.adminAppearance} initialProfile={profile} />;
+  return <AdminDashboard activeTab={activeTab} data={data} initialAppearance={settings.adminAppearance} initialProfile={profile} initialAntiInspect={settings.security.antiInspect} />;
 }

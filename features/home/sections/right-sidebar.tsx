@@ -27,6 +27,17 @@ type RightSidebarProps = {
 
 const VISIBLE_GENRE_COUNT = 8;
 
+function GoogleMark() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-6 w-6">
+      <path fill="#4285f4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.92h5.38a4.6 4.6 0 0 1-2 3.02v2.54h3.24c1.9-1.75 2.98-4.32 2.98-7.41Z" />
+      <path fill="#34a853" d="M12 22c2.7 0 4.98-.9 6.63-2.36l-3.24-2.54c-.9.6-2.05.96-3.39.96-2.61 0-4.82-1.76-5.61-4.13H3.04v2.62A10 10 0 0 0 12 22Z" />
+      <path fill="#fbbc05" d="M6.39 13.93A6 6 0 0 1 6.08 12c0-.67.11-1.32.31-1.93V7.45H3.04A10 10 0 0 0 2 12c0 1.64.39 3.19 1.04 4.55l3.35-2.62Z" />
+      <path fill="#ea4335" d="M12 5.94c1.47 0 2.79.5 3.82 1.5l2.88-2.88A9.66 9.66 0 0 0 12 2a10 10 0 0 0-8.96 5.45l3.35 2.62C7.18 7.7 9.39 5.94 12 5.94Z" />
+    </svg>
+  );
+}
+
 export function RightSidebar({
   authLockdownEnabled,
   authLockdownMessage,
@@ -82,24 +93,34 @@ export function RightSidebar({
               </>
             ) : (
               <>
-                <div className="rounded-[18px] border border-[rgba(255,255,255,0.06)] bg-[linear-gradient(145deg,rgba(231,82,169,0.08),rgba(128,78,225,0.07))] p-4">
-                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-white/[0.05] text-[var(--accent-strong)]">
-                    <MaterialIcon className="text-[22px]" name="verified_user" />
-                  </span>
-                  <p className="mt-4 text-sm font-semibold text-[var(--text-primary)]">One secure sign-in</p>
-                  <p className="mt-1.5 text-xs leading-5 text-[var(--text-muted)]">
-                    Use your Google account. No separate username, password, or verification code is needed.
-                  </p>
+                <div className="rounded-[20px] border border-[rgba(235,120,194,0.1)] bg-[linear-gradient(145deg,rgba(231,82,169,0.06),rgba(128,78,225,0.035)),rgba(7,8,17,0.72)] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]">
+                  <div className="flex items-start gap-4">
+                    <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-[rgba(235,120,194,0.18)] bg-[rgba(255,255,255,0.035)] text-[#ef8bc7] shadow-[0_10px_24px_rgba(0,0,0,0.16)]">
+                      <MaterialIcon className="text-[25px]" name="verified_user" />
+                    </span>
+                    <div className="min-w-0 pt-0.5">
+                      <p className="text-base font-semibold tracking-[-0.015em] text-[var(--text-primary)]">One secure sign-in</p>
+                      <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">
+                        Use your Google account to sign in. No separate username or password is needed.
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <LockdownAction
-                  locked={authLockdownEnabled}
-                  message={authLockdownMessage}
-                  href="/account"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(90deg,var(--accent),#5f4ed8)] px-4 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-white shadow-[0_14px_28px_rgba(95,78,216,0.28)]"
-                >
-                  <MaterialIcon className="text-[18px]" name="account_circle" />
-                  Continue with Google
-                </LockdownAction>
+                <div className="h-px bg-[linear-gradient(90deg,transparent,rgba(235,120,194,0.2),transparent)]" />
+                <div className="rounded-[19px] bg-[linear-gradient(100deg,#ed6daf,#7a5cff)] p-[2px] shadow-[0_14px_32px_rgba(74,42,126,0.2)]">
+                  <LockdownAction
+                    locked={authLockdownEnabled}
+                    message={authLockdownMessage}
+                    href="/account"
+                    className="group inline-flex min-h-14 w-full items-center rounded-[17px] bg-[var(--panel-surface)] px-4 text-sm font-semibold text-[var(--text-primary)] transition-[transform,box-shadow] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:-translate-y-0.5 hover:shadow-[0_18px_38px_rgba(178,68,166,0.26)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ec76bc]"
+                  >
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/[0.045]">
+                      <GoogleMark />
+                    </span>
+                    <span className="flex-1 px-3 text-left">Continue with Google</span>
+                    <MaterialIcon className="text-[22px] text-[#e56cbe] transition-transform duration-[var(--motion-base)] group-hover:translate-x-1" name="chevron_right" />
+                  </LockdownAction>
+                </div>
               </>
             )}
           </div>

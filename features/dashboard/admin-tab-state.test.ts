@@ -6,6 +6,7 @@ import { addVisitedTab, resolveAdminTab, tabNeedsDashboardData } from "./admin-t
 test("resolveAdminTab preserves valid tabs and rejects unknown values", () => {
   assert.equal(resolveAdminTab("content"), "content");
   assert.equal(resolveAdminTab("member"), "member");
+  assert.equal(resolveAdminTab("report"), "report");
   assert.equal(resolveAdminTab("unknown"), "overview");
   assert.equal(resolveAdminTab(null), "overview");
 });
@@ -23,7 +24,7 @@ test("tabNeedsDashboardData only selects panels backed by the shared dashboard r
     assert.equal(tabNeedsDashboardData(tab), true, `${tab} should load dashboard data`);
   }
 
-  for (const tab of ["content", "api", "status", "setting"] as const) {
+  for (const tab of ["content", "api", "status", "report", "setting"] as const) {
     assert.equal(tabNeedsDashboardData(tab), false, `${tab} should skip dashboard data`);
   }
 });

@@ -5,6 +5,9 @@
     "enabled": false,
     "message": "Login and registration are currently unavailable."
   },
+  "security": {
+    "antiInspect": false
+  },
   "animeRules": [],
   "adminAppearance": {
     "fontSize": "comfortable",

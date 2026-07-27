@@ -8,11 +8,13 @@ import type { DashboardResponse } from "@/entities/anime/api/catalog";
 import { addVisitedTab, ADMIN_TABS, type AdminTab, resolveAdminTab, tabNeedsDashboardData } from "@/features/dashboard/admin-tab-state";
 import { AccountSettings, type Profile } from "@/features/dashboard/account-settings";
 import { AdminAppearanceSettings } from "@/features/dashboard/admin-appearance-settings";
+import { AdminSecuritySettings } from "@/features/dashboard/admin-security-settings";
 import { ApiKeyManager } from "@/features/dashboard/api-key-manager";
 import { ContentManager } from "@/features/dashboard/content-manager";
 import { MemberList } from "@/features/dashboard/member-list";
 import { OverviewAnalytics } from "@/features/dashboard/overview-analytics";
 import { PlatformStatus } from "@/features/dashboard/platform-status";
+import { ReportManager } from "@/features/dashboard/report-manager";
 import { StatusManager } from "@/features/dashboard/status-manager";
 import type { AdminAppearance } from "@/shared/lib/admin-appearance";
 import { MaterialIcon } from "@/shared/ui/icons/material-icon";
@@ -25,6 +27,7 @@ const navigation: Array<{ id: AdminTab; label: string; icon: string }> = [
   { id: "member", label: "Member", icon: "group" },
   { id: "api", label: "API", icon: "api" },
   { id: "status", label: "Status", icon: "campaign" },
+  { id: "report", label: "Report", icon: "report" },
   { id: "activity", label: "Activity Log", icon: "history" },
   { id: "setting", label: "Setting", icon: "settings" }
 ];
@@ -91,15 +94,15 @@ function ActivityList({ data, compact = false }: { data: DashboardResponse; comp
   return <section className="rounded-2xl border border-[#292e3c] bg-[#151923] p-5"><div><h2 className="text-sm font-bold text-[#eef1f6]">Activity log</h2><p className="mt-1 text-[10px] text-[#7f899d]">Recorded administrator and system events</p></div><div className="mt-4 divide-y divide-[#252a37]">{events.map((event, index) => <article key={`${event.created_at}-${index}`} className="flex gap-3 py-4 first:pt-1"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#202a4c] text-[#9cafff]"><MaterialIcon className="text-[18px]" name="event_note" /></span><div className="min-w-0 flex-1"><p className="text-[11px] font-semibold text-[#dfe3eb]">{event.summary}</p><p className="mt-1 text-[9px] capitalize text-[#778196]">{event.event_type.replaceAll("_", " ")}</p></div><time className="text-[9px] text-[#697386]">{formatDate(event.created_at)}</time></article>)}{events.length === 0 ? <p className="py-10 text-center text-xs text-[#7f899d]">No activity has been recorded yet.</p> : null}</div></section>;
 }
 
-function SettingsPanel({ appearance, initialProfile, onAppearanceChange }: { appearance: AdminAppearance; initialProfile: Profile | null; onAppearanceChange: (appearance: AdminAppearance) => void }) {
-  return <div className="space-y-5"><AccountSettings initialProfile={initialProfile} /><AdminAppearanceSettings appearance={appearance} onChange={onAppearanceChange} /></div>;
+function SettingsPanel({ appearance, initialProfile, initialAntiInspect, onAppearanceChange }: { appearance: AdminAppearance; initialProfile: Profile | null; initialAntiInspect: boolean; onAppearanceChange: (appearance: AdminAppearance) => void }) {
+  return <div className="space-y-5"><AccountSettings initialProfile={initialProfile} /><AdminSecuritySettings initialAntiInspect={initialAntiInspect} /><AdminAppearanceSettings appearance={appearance} onChange={onAppearanceChange} /></div>;
 }
 
 function RetainedPanel({ active, children }: { active: boolean; children: ReactNode }) {
   return <section hidden={!active} aria-hidden={!active} inert={!active ? true : undefined}>{children}</section>;
 }
 
-export function AdminDashboard({ activeTab: initialTab, data: initialData, initialAppearance, initialProfile }: { activeTab: AdminTab; data: DashboardResponse | null; initialAppearance: AdminAppearance; initialProfile: Profile | null }) {
+export function AdminDashboard({ activeTab: initialTab, data: initialData, initialAppearance, initialProfile, initialAntiInspect }: { activeTab: AdminTab; data: DashboardResponse | null; initialAppearance: AdminAppearance; initialProfile: Profile | null; initialAntiInspect: boolean }) {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [data, setData] = useState(initialData);
   const [appearance, setAppearance] = useState(initialAppearance);
@@ -141,5 +144,5 @@ export function AdminDashboard({ activeTab: initialTab, data: initialData, initi
   const title = navigation.find((item) => item.id === activeTab)?.label ?? "Overview";
   const pageTitle = activeTab === "setting" ? "Settings" : title;
   const pageDescription = activeTab === "setting" ? "Manage and configure your RioAnime platform settings." : "Manage and monitor the RioAnime platform.";
-  return <main className="admin-shell min-h-screen" data-admin-font-size={appearance.fontSize} data-admin-font-family={appearance.fontFamily} data-admin-theme={appearance.theme} data-admin-accent={appearance.accent}><Sidebar activeTab={activeTab} onNavigate={navigate} /><div className="min-h-screen lg:pl-[248px]"><Header activeTab={activeTab} onNavigate={navigate} /><div className="mx-auto max-w-[1540px] px-4 py-6 sm:px-7 lg:px-8 lg:py-8"><section className="mb-6"><p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--admin-accent-text)]">Administration</p><h1 className="mt-1 text-[25px] font-bold tracking-[-0.035em] text-[#f5f7fb] sm:text-[29px]">{pageTitle}</h1><p className="mt-1.5 text-[12px] text-[#8f99ac]">{pageDescription}</p></section>{visitedTabs.has("overview") ? <RetainedPanel active={activeTab === "overview"}><Overview data={data} /></RetainedPanel> : null}{visitedTabs.has("content") ? <RetainedPanel active={activeTab === "content"}><ContentPanel /></RetainedPanel> : null}{visitedTabs.has("member") ? <RetainedPanel active={activeTab === "member"}><MemberPanel data={data} /></RetainedPanel> : null}{visitedTabs.has("api") ? <RetainedPanel active={activeTab === "api"}><ApiKeyManager /></RetainedPanel> : null}{visitedTabs.has("status") ? <RetainedPanel active={activeTab === "status"}><StatusManager /></RetainedPanel> : null}{visitedTabs.has("activity") ? <RetainedPanel active={activeTab === "activity"}>{data ? <ActivityList data={data} /> : <EmptyData />}</RetainedPanel> : null}{visitedTabs.has("setting") ? <RetainedPanel active={activeTab === "setting"}><SettingsPanel appearance={appearance} initialProfile={initialProfile} onAppearanceChange={setAppearance} /></RetainedPanel> : null}<footer className="mt-8 flex flex-col gap-2 border-t border-[#252a37] pt-5 text-[9px] text-[#697386] sm:flex-row sm:justify-between"><p>© 2026 RioAnime. Administration console.</p><p>D1 connected · Development environment</p></footer></div></div></main>;
+  return <main className="admin-shell min-h-screen" data-admin-font-size={appearance.fontSize} data-admin-font-family={appearance.fontFamily} data-admin-theme={appearance.theme} data-admin-accent={appearance.accent}><Sidebar activeTab={activeTab} onNavigate={navigate} /><div className="min-h-screen lg:pl-[248px]"><Header activeTab={activeTab} onNavigate={navigate} /><div className="mx-auto max-w-[1540px] px-4 py-6 sm:px-7 lg:px-8 lg:py-8"><section className="mb-6"><p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--admin-accent-text)]">Administration</p><h1 className="mt-1 text-[25px] font-bold tracking-[-0.035em] text-[#f5f7fb] sm:text-[29px]">{pageTitle}</h1><p className="mt-1.5 text-[12px] text-[#8f99ac]">{pageDescription}</p></section>{visitedTabs.has("overview") ? <RetainedPanel active={activeTab === "overview"}><Overview data={data} /></RetainedPanel> : null}{visitedTabs.has("content") ? <RetainedPanel active={activeTab === "content"}><ContentPanel /></RetainedPanel> : null}{visitedTabs.has("member") ? <RetainedPanel active={activeTab === "member"}><MemberPanel data={data} /></RetainedPanel> : null}{visitedTabs.has("api") ? <RetainedPanel active={activeTab === "api"}><ApiKeyManager /></RetainedPanel> : null}{visitedTabs.has("status") ? <RetainedPanel active={activeTab === "status"}><StatusManager /></RetainedPanel> : null}{visitedTabs.has("report") ? <RetainedPanel active={activeTab === "report"}><ReportManager /></RetainedPanel> : null}{visitedTabs.has("activity") ? <RetainedPanel active={activeTab === "activity"}>{data ? <ActivityList data={data} /> : <EmptyData />}</RetainedPanel> : null}{visitedTabs.has("setting") ? <RetainedPanel active={activeTab === "setting"}><SettingsPanel appearance={appearance} initialProfile={initialProfile} initialAntiInspect={initialAntiInspect} onAppearanceChange={setAppearance} /></RetainedPanel> : null}<footer className="mt-8 flex flex-col gap-2 border-t border-[#252a37] pt-5 text-[9px] text-[#697386] sm:flex-row sm:justify-between"><p>© 2026 RioAnime. Administration console.</p><p>D1 connected · Development environment</p></footer></div></div></main>;
 }

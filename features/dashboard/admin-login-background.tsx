@@ -5,7 +5,10 @@ import { useEffect, useState } from "react";
 
 const BACKGROUNDS = [
   "/admin-login-background-1.png",
-  "/admin-login-background-2.png"
+  "/admin-login-background-2.png",
+  "/admin-login-background-3.png",
+  "/admin-login-background-4.png",
+  "/admin-login-background-5.png"
 ];
 
 export function AdminLoginBackground() {
@@ -29,7 +32,7 @@ export function AdminLoginBackground() {
           priority
           alt=""
           key={src}
-          className={`object-cover object-center transition-opacity duration-1000 ease-in-out motion-reduce:transition-none ${activeIndex === index ? "opacity-100" : "opacity-0"}`}
+          className={`object-cover object-center transition-opacity duration-2000 ease-in-out motion-reduce:transition-none ${activeIndex === index ? "opacity-100" : "opacity-0"}`}
           sizes="100vw"
           src={src}
         />

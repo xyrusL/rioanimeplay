@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { auth, signOut } from "@/auth";
@@ -16,6 +16,7 @@ import {
   verifyAdminCredentials
 } from "@/shared/lib/admin-auth";
 import { ADMIN_ACCENTS, ADMIN_FONT_FAMILIES, ADMIN_FONT_SIZES, ADMIN_THEMES, type AdminAppearance } from "@/shared/lib/admin-appearance";
+import { requestAdminApi } from "@/shared/lib/admin-api";
 import { updateSiteSettings } from "@/shared/lib/site-settings";
 
 function createResult(
@@ -81,5 +82,22 @@ export async function updateAdminAppearanceAction(
     return createResult("success", "Console appearance saved", "Your admin workspace preferences were updated.");
   } catch {
     return createResult("error", "Console appearance save failed", "The preferences could not be saved right now.");
+  }
+}
+
+export async function setAntiInspectAction(antiInspect: boolean): Promise<AdminActionState> {
+  await requireAdminAuthentication();
+
+  try {
+    const response = await requestAdminApi("/site-settings", {
+      method: "PATCH",
+      body: JSON.stringify({ antiInspect })
+    });
+    if (!response?.ok) throw new Error("Security settings API rejected the update");
+    revalidateTag("site-security-settings");
+    revalidatePath("/", "layout");
+    return createResult("success", "Security settings saved", antiInspect ? "Anti-inspect protection is now active." : "Anti-inspect protection is now disabled.");
+  } catch {
+    return createResult("error", "Security settings save failed", "The security preference could not be saved right now.");
   }
 }

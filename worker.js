@@ -39,7 +39,9 @@ export const TRACKED_API_ROUTES = [
   "/v1/browse",
   "/v1/anime/a-z",
   "/v1/cache-manifest",
+  "/v1/site-settings",
   "/v1/announcements",
+  "/v1/reports",
   "/v1/auth/admin-login",
   "/v1/user/sync",
   "/v1/user/library",
@@ -1695,14 +1697,135 @@ async function handleAdminAnalytics(request, env, origin) {
   }, 200, origin);
 }
 
+async function readSiteSecuritySettings(env) {
+  const settings = await env.DB.prepare(
+    "SELECT anti_inspect FROM site_security_settings WHERE id = 1"
+  ).first();
+  return { antiInspect: Boolean(settings?.anti_inspect) };
+}
+
+async function handleSiteSettings(request, env, origin) {
+  if (request.method !== "GET") return error("METHOD_NOT_ALLOWED", "Method not allowed", 405, origin);
+  return json({ security: await readSiteSecuritySettings(env) }, 200, origin);
+}
+
+async function handleAdminSiteSettings(request, env, origin, accountId) {
+  if (!(await getAdminAccount(env, accountId))) {
+    return error("UNAUTHORIZED", "Administrator session is no longer valid", 401, origin);
+  }
+  if (request.method !== "PATCH") return error("METHOD_NOT_ALLOWED", "Method not allowed", 405, origin);
+
+  const parsed = await parseJsonBody(request, origin);
+  if (parsed.response) return parsed.response;
+  if (typeof parsed.data?.antiInspect !== "boolean") {
+    return error("INVALID_SETTING", "antiInspect must be a boolean", 400, origin);
+  }
+
+  const enabled = parsed.data.antiInspect;
+  await env.DB.prepare(
+    `UPDATE site_security_settings
+     SET anti_inspect = ?1, updated_at = datetime('now') WHERE id = 1`
+  ).bind(enabled ? 1 : 0).run();
+  return json({ security: { antiInspect: enabled } }, 200, origin);
+}
+
+function reportItem(row) {
+  return {
+    id: row.id,
+    animeId: row.anime_id,
+    animeTitle: row.anime_title,
+    episodeNumber: Number(row.episode_number),
+    reporterName: row.reporter_name || null,
+    reporterType: row.account_email ? "member" : "guest",
+    memberEmail: row.account_email || null,
+    message: row.message,
+    createdAt: row.created_at
+  };
+}
+
+function isMeaningfulReportMessage(value) {
+  const lettersAndNumbers = [...value.matchAll(/[\p{L}\p{N}]/gu)].map((match) => match[0]);
+  const words = value.match(/[\p{L}\p{N}]+/gu) ?? [];
+  const hasCjkText = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(value);
+  const uniqueCharacters = new Set(lettersAndNumbers.map((character) => character.toLocaleLowerCase())).size;
+  const hasEnoughContent = hasCjkText ? lettersAndNumbers.length >= 4 : lettersAndNumbers.length >= 6;
+  return hasEnoughContent && uniqueCharacters >= (hasCjkText ? 3 : 4) && (words.length >= 2 || hasCjkText);
+}
+
+async function reportClientFingerprint(request) {
+  const ip = request.headers.get("X-RioAnime-Client-IP")?.trim() || "unknown";
+  const agent = request.headers.get("X-RioAnime-Client-Agent")?.trim() || "unknown";
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${ip}\n${agent}`));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function handleReports(request, env, origin) {
+  if (request.method !== "POST") return error("METHOD_NOT_ALLOWED", "Method not allowed", 405, origin);
+  const contentLength = Number(request.headers.get("Content-Length") ?? 0);
+  if (contentLength > 16_384) return error("REPORT_TOO_LARGE", "Report is too large", 413, origin);
+
+  const parsed = await parseJsonBody(request, origin);
+  if (parsed.response) return parsed.response;
+  const body = parsed.data ?? {};
+  const animeId = typeof body.animeId === "string" ? body.animeId.trim() : "";
+  const episodeNumber = normalizeEpisodeNumber(body.episodeNumber);
+  const message = typeof body.message === "string" ? body.message.trim() : "";
+  const reporterName = typeof body.reporterName === "string" ? body.reporterName.trim() : "";
+
+  if (!isValidAnimeId(animeId) || !episodeNumber) return error("INVALID_REPORT_TARGET", "A valid anime and episode are required", 400, origin);
+  if (message.length > 2_000 || !isMeaningfulReportMessage(message)) return error("INVALID_REPORT_MESSAGE", "Please describe the issue using at least a few clear words", 400, origin);
+  if (reporterName.length > 100) return error("INVALID_REPORT_NAME", "Name must be 100 characters or fewer", 400, origin);
+
+  const fingerprint = await reportClientFingerprint(request);
+  const identityEmail = decodeIdentityHeader(request, "X-RioAnime-User-Email").trim().toLowerCase();
+  const memberAccount = identityEmail && identityEmail.length <= 254
+    ? await env.DB.prepare("SELECT id, email FROM accounts WHERE email = ?1 COLLATE NOCASE AND status = 'active' LIMIT 1").bind(identityEmail).first()
+    : null;
+  const [anime, episode, recentReports, repeatedEpisode] = await env.DB.batch([
+    env.DB.prepare(`SELECT anime_id, title FROM anime WHERE anime_id = ?1 AND ${PUBLIC_ANIME_PREDICATE} LIMIT 1`).bind(animeId),
+    env.DB.prepare("SELECT 1 AS available FROM episodes WHERE anime_id = ?1 AND episode_num = ?2 LIMIT 1").bind(animeId, episodeNumber),
+    env.DB.prepare("SELECT COUNT(*) AS total FROM user_reports WHERE client_fingerprint = ?1 AND datetime(created_at) >= datetime('now', '-10 minutes')").bind(fingerprint),
+    env.DB.prepare(
+      `SELECT 1 AS found FROM user_reports
+       WHERE anime_id = ?1 AND episode_number = ?2
+         AND datetime(created_at) >= datetime('now', '-10 minutes')
+         AND ((?3 IS NOT NULL AND account_id = ?3) OR (?3 IS NULL AND account_id IS NULL AND client_fingerprint = ?4))
+       LIMIT 1`
+    ).bind(animeId, episodeNumber, memberAccount?.id ?? null, fingerprint)
+  ]);
+  const animeRow = anime.results[0];
+  if (!animeRow) return error("ANIME_NOT_FOUND", "This anime is no longer available", 404, origin);
+  if (!episode.results[0]) return error("EPISODE_NOT_FOUND", "That episode is not available", 404, origin);
+  if (repeatedEpisode.results[0]) return error("REPORT_ALREADY_SENT", "A report for this episode was already sent. Try again in 10 minutes.", 409, origin);
+  if (Number(recentReports.results[0]?.total ?? 0) >= 3) return error("REPORT_RATE_LIMITED", "Too many reports were sent. Please try again in a few minutes.", 429, origin);
+
+  const id = createId();
+  await env.DB.prepare(
+    `INSERT INTO user_reports (id, anime_id, anime_title, episode_number, reporter_name, message, client_fingerprint, account_id, account_email)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`
+  ).bind(id, animeRow.anime_id, animeRow.title, episodeNumber, reporterName || null, message, fingerprint, memberAccount?.id ?? null, memberAccount?.email ?? null).run();
+  return json({ id }, 201, origin);
+}
+
+async function handleAdminReports(request, env, origin) {
+  if (request.method !== "GET") return error("METHOD_NOT_ALLOWED", "Method not allowed", 405, origin);
+  const rows = await env.DB.prepare(
+    `SELECT id, anime_id, anime_title, episode_number, reporter_name, account_email, message, created_at
+     FROM user_reports ORDER BY datetime(created_at) DESC, id DESC`
+  ).all();
+  return json({ items: rows.results.map(reportItem) }, 200, origin);
+}
+
 async function routeAdminManagement(request, env, origin, path) {
   const accountId = request.headers.get("X-RioAnime-Admin-Id");
   if (path === "/v1/admin/profile") return handleAdminProfile(request, env, origin, accountId);
-  if (path === "/v1/admin/members" || path.startsWith("/v1/admin/members/") || path === "/v1/admin/analytics" || path === "/v1/admin/content" || path.startsWith("/v1/admin/content/") || path === "/v1/admin/content-notices" || path.startsWith("/v1/admin/content-notices/") || path === "/v1/admin/announcements" || path.startsWith("/v1/admin/announcements/")) {
+  if (path === "/v1/admin/site-settings") return handleAdminSiteSettings(request, env, origin, accountId);
+  if (path === "/v1/admin/members" || path.startsWith("/v1/admin/members/") || path === "/v1/admin/analytics" || path === "/v1/admin/reports" || path === "/v1/admin/content" || path.startsWith("/v1/admin/content/") || path === "/v1/admin/content-notices" || path.startsWith("/v1/admin/content-notices/") || path === "/v1/admin/announcements" || path.startsWith("/v1/admin/announcements/")) {
     if (!(await getAdminAccount(env, accountId))) return error("UNAUTHORIZED", "Administrator session is no longer valid", 401, origin);
     if (path === "/v1/admin/members") return handleAdminMembers(request, env, origin);
     if (path.startsWith("/v1/admin/members/")) return handleAdminMemberDetail(request, env, origin, decodeURIComponent(path.slice("/v1/admin/members/".length)));
     if (path === "/v1/admin/analytics") return handleAdminAnalytics(request, env, origin);
+    if (path === "/v1/admin/reports") return handleAdminReports(request, env, origin);
     if (path === "/v1/admin/content-notices" || path.startsWith("/v1/admin/content-notices/")) return handleAdminContentNotices(request, env, origin, accountId, path);
     if (path === "/v1/admin/announcements" || path.startsWith("/v1/admin/announcements/")) return handleAdminAnnouncements(request, env, origin, accountId, path);
     return handleAdminContent(request, env, origin, accountId, path);
@@ -2050,6 +2173,7 @@ async function routeRequest(request, env, ctx, origin) {
   if (path === "/v1/auth/admin-identity" && request.method === "POST") {
     return handleAdminIdentity(request, env, origin);
   }
+  if (path === "/v1/reports") return handleReports(request, env, origin);
   if (request.method !== "GET") {
     return error("METHOD_NOT_ALLOWED", "Only GET requests are supported", 405, origin);
   }
@@ -2059,6 +2183,7 @@ async function routeRequest(request, env, ctx, origin) {
   }
   if (path === "/v1/dashboard") return handleDashboard(env, origin);
   if (path === "/v1/cache-manifest") return handleCacheManifest(request, env, ctx, origin);
+  if (path === "/v1/site-settings") return handleSiteSettings(request, env, origin);
   if (path === "/v1/home") return handleHome(request, env, ctx, origin);
   if (path === "/v1/browse") return handleBrowse(request, env, ctx, origin);
   if (path === "/v1/anime/a-z") return handleAlphabeticalCatalog(request, env, ctx, origin);

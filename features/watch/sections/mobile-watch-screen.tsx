@@ -8,6 +8,7 @@ import { formatDecimalScore } from "@/entities/anime/lib/formatters";
 import type { WatchAnimeItem } from "@/entities/anime/model/types";
 import { useWatchDocumentTitle } from "@/features/watch/lib/use-watch-document-title";
 import { SmartVideoPlayer } from "@/features/watch/sections/smart-video-player";
+import { ReportIssueModal } from "@/features/watch/sections/report-issue-modal";
 import {
   getSavedEpisode,
   getWatchedEpisodes,
@@ -37,6 +38,7 @@ export function MobileWatchScreen({ anime }: MobileWatchScreenProps) {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isPlayerFullscreen, setIsPlayerFullscreen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
   const playerSectionRef = useRef<HTMLElement>(null);
   const episodeNumbers = anime.episodeNumbers;
 
@@ -148,7 +150,7 @@ export function MobileWatchScreen({ anime }: MobileWatchScreenProps) {
                 </div>
               </div>
 
-              <button
+              <div className="flex items-center gap-2"><button type="button" aria-label={`Report a problem with ${anime.title}`} title="Report a problem" onClick={() => setIsReportOpen(true)} className="flex h-11 w-11 items-center justify-center rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(8,14,19,0.54)] text-rose-200 backdrop-blur-sm"><MaterialIcon className="text-[20px]" name="report" /></button><button
                 type="button"
                 aria-label={isBookmarked ? `Remove bookmark for ${anime.title}` : `Bookmark ${anime.title}`}
                 onClick={handleBookmarkToggle}
@@ -163,7 +165,7 @@ export function MobileWatchScreen({ anime }: MobileWatchScreenProps) {
                   filled={isBookmarked}
                   name={isBookmarked ? "bookmark" : "bookmark_add"}
                 />
-              </button>
+              </button></div>
             </div>
           </header>
 
@@ -319,7 +321,7 @@ export function MobileWatchScreen({ anime }: MobileWatchScreenProps) {
             </div>
           </section>
         </div>
-      </div>
+      </div><ReportIssueModal animeId={anime.libraryId} animeTitle={anime.title} currentEpisode={selectedEpisode} episodeNumbers={episodeNumbers} isOpen={isReportOpen} onClose={() => setIsReportOpen(false)} />
     </main>
   );
 }

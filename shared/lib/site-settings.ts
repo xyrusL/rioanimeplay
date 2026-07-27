@@ -23,6 +23,10 @@ export type SiteAuthLockdownSettings = {
   message: string;
 };
 
+export type SiteSecuritySettings = {
+  antiInspect: boolean;
+};
+
 export type SiteAnimeRule = {
   animeId?: number;
   slug: string;
@@ -36,12 +40,14 @@ export type SiteSettings = {
   themePreset: ThemePreset;
   fontPreset: FontPreset;
   authLockdown: SiteAuthLockdownSettings;
+  security: SiteSecuritySettings;
   animeRules: SiteAnimeRule[];
   adminAppearance: AdminAppearance;
 };
 
 const SETTINGS_DIR = path.join(process.cwd(), "data");
 const SETTINGS_PATH = path.join(SETTINGS_DIR, "site-settings.json");
+const API_URL = process.env.RIOANIME_API_URL ?? "https://api.rioanime.dezely.com";
 
 const DEFAULT_SITE_SETTINGS: SiteSettings = {
   themePreset: "dark-purple",
@@ -49,6 +55,9 @@ const DEFAULT_SITE_SETTINGS: SiteSettings = {
   authLockdown: {
     enabled: false,
     message: "Login and registration are currently unavailable."
+  },
+  security: {
+    antiInspect: false
   },
   animeRules: [],
   adminAppearance: DEFAULT_ADMIN_APPEARANCE
@@ -100,6 +109,7 @@ function normalizeSettings(input: unknown): SiteSettings {
 
   const candidate = input as Partial<SiteSettings>;
   const authLockdown = candidate.authLockdown ?? DEFAULT_SITE_SETTINGS.authLockdown;
+  const security = candidate.security ?? DEFAULT_SITE_SETTINGS.security;
 
   return {
     themePreset:
@@ -119,6 +129,12 @@ function normalizeSettings(input: unknown): SiteSettings {
         typeof authLockdown.message === "string" && authLockdown.message.trim()
           ? authLockdown.message.trim()
           : DEFAULT_SITE_SETTINGS.authLockdown.message
+    },
+    security: {
+      antiInspect:
+        typeof security.antiInspect === "boolean"
+          ? security.antiInspect
+          : DEFAULT_SITE_SETTINGS.security.antiInspect
     },
     animeRules: normalizeAnimeRules(candidate.animeRules),
     adminAppearance: normalizeAdminAppearance(candidate.adminAppearance)
@@ -144,7 +160,22 @@ export async function getSiteSettings(): Promise<SiteSettings> {
 
   try {
     const raw = await readFile(SETTINGS_PATH, "utf8");
-    return normalizeSettings(JSON.parse(raw));
+    const settings = normalizeSettings(JSON.parse(raw));
+    const apiKey = process.env.RIOANIME_API_KEY;
+    if (!apiKey) return settings;
+
+    try {
+      const response = await fetch(`${API_URL}/v1/site-settings`, {
+        headers: { Accept: "application/json", "X-RioAnime-Key": apiKey },
+        next: { revalidate: 300, tags: ["site-security-settings"] }
+      });
+      if (!response.ok) return settings;
+      const remote = await response.json() as { security?: { antiInspect?: unknown } };
+      if (typeof remote.security?.antiInspect !== "boolean") return settings;
+      return { ...settings, security: { antiInspect: remote.security.antiInspect } };
+    } catch {
+      return settings;
+    }
   } catch {
     return DEFAULT_SITE_SETTINGS;
   }

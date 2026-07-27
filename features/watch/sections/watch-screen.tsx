@@ -9,6 +9,7 @@ import type { WatchAnimeItem } from "@/entities/anime/model/types";
 import { SearchAutocomplete } from "@/features/search/sections/search-autocomplete";
 import { useWatchDocumentTitle } from "@/features/watch/lib/use-watch-document-title";
 import { SmartVideoPlayer } from "@/features/watch/sections/smart-video-player";
+import { ReportIssueModal } from "@/features/watch/sections/report-issue-modal";
 import {
   getSavedEpisode,
   getWatchedEpisodes,
@@ -34,6 +35,7 @@ export function WatchScreen({ anime }: WatchScreenProps) {
   const [isLightsOff, setIsLightsOff] = useState(false);
   const [isPlayerExpanded, setIsPlayerExpanded] = useState(false);
   const [playerReloadToken, setPlayerReloadToken] = useState(0);
+  const [isReportOpen, setIsReportOpen] = useState(false);
   const episodeNumbers = anime.episodeNumbers;
   const selectedEpisodeIndex = episodeNumbers.indexOf(selectedEpisode);
   const nextEpisode = episodeNumbers[selectedEpisodeIndex + 1] ?? null;
@@ -239,7 +241,7 @@ export function WatchScreen({ anime }: WatchScreenProps) {
         <section className="mt-5 overflow-hidden rounded-[28px] border border-[var(--line-soft)] bg-[var(--watch-panel-surface)] shadow-[var(--soft-shadow)]">
           <div className="px-4 py-4 sm:px-5">
             <div className="relative">
-              <div className="min-w-0 flex-1 space-y-2 pr-10 sm:pr-12">
+              <div className="min-w-0 flex-1 space-y-2 pr-24 sm:pr-28">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--line-soft)] bg-[rgba(255,255,255,0.03)] px-3 py-1 text-[0.7rem] uppercase tracking-[0.18em] text-[var(--text-secondary)]">
                     <MaterialIcon className="text-[15px]" name="movie" />
@@ -255,11 +257,11 @@ export function WatchScreen({ anime }: WatchScreenProps) {
                 </h1>
               </div>
 
-              <button
+              <div className="absolute top-0 right-0 flex items-center gap-2"><button type="button" aria-label={`Report a problem with ${anime.title}`} title="Report a problem" onClick={() => setIsReportOpen(true)} className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--line-soft)] bg-[rgba(255,255,255,0.03)] text-[var(--text-secondary)] transition-[border-color,color,transform,background-color] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:-translate-y-0.5 hover:border-rose-400/35 hover:bg-rose-400/10 hover:text-rose-300"><MaterialIcon className="text-[19px]" name="report" /></button><button
                 type="button"
                 aria-label={isBookmarked ? `Remove bookmark for ${anime.title}` : `Bookmark ${anime.title}`}
                 onClick={handleBookmarkToggle}
-                className={`absolute top-0 right-0 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-[border-color,color,transform,background-color,box-shadow] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:-translate-y-0.5 ${
+                className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-[border-color,color,transform,background-color,box-shadow] duration-[var(--motion-base)] ease-[var(--ease-smooth)] hover:-translate-y-0.5 ${
                   isBookmarked
                     ? "border-[var(--line-strong)] bg-[var(--accent-soft)] text-[var(--accent-strong)] shadow-[0_10px_24px_rgba(0,0,0,0.16)] hover:bg-[rgba(141,114,255,0.22)]"
                     : "border-[var(--line-soft)] bg-[rgba(255,255,255,0.03)] text-[var(--text-secondary)] hover:border-[var(--line-strong)] hover:bg-[var(--accent-soft)] hover:text-[var(--text-primary)]"
@@ -270,7 +272,7 @@ export function WatchScreen({ anime }: WatchScreenProps) {
                   filled={isBookmarked}
                   name={isBookmarked ? "bookmark" : "bookmark_add"}
                 />
-              </button>
+              </button></div>
             </div>
 
             <div className="mt-4 space-y-3 border-t border-[var(--line-soft)] pt-4">
@@ -397,7 +399,7 @@ export function WatchScreen({ anime }: WatchScreenProps) {
             Show Comments
           </button>
         </div>
-      </div>
+      </div><ReportIssueModal animeId={anime.libraryId} animeTitle={anime.title} currentEpisode={selectedEpisode} episodeNumbers={episodeNumbers} isOpen={isReportOpen} onClose={() => setIsReportOpen(false)} />
     </main>
   );
 }
